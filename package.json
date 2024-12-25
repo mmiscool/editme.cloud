@@ -1,0 +1,27 @@
+{
+  "name": "aicodertool",
+  "version": "1.0.63",
+  "homepage": "https://github.com/mmiscool/aiCoder",
+  "scripts": {
+    "start": "./node_modules/.bin/parcel ./src/index.html",
+    "build": "./node_modules/.bin/parcel watch ./src/index.html --no-hmr"
+  },
+  "targets": {
+    "default": {
+      "context": "browser",
+      "publicUrl": "/",
+      "distDir": "./dist",
+      "sourceMap": true
+    }
+  },
+  "author": "mmiscool",
+  "license": "MIT",
+  "description": "A tool to make AI coding tasks easy",
+  "type": "module",
+  "dependencies": {
+    "@parcel/config-default": "^2.13.2",
+    "@parcel/core": "^2.13.2",
+    "parcel": "^2.13.2",
+    "monaco-editor": "^0.52.2"
+  }
+}
