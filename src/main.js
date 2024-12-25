@@ -11,7 +11,10 @@ if ('serviceWorker' in navigator) {
         });
 }
 
-
-// Usage
-const editor = new TabbedFileEditor(document.body);
-
+if ('showOpenFilePicker' in window) {
+    const editor = new TabbedFileEditor(document.body);
+} else {
+    alert('Your browser does not support the File System Access API, use Chrome, Edge, or Opera');
+    document.body.textContent = 'Your browser does not support the File System Access API, use Chrome, Edge, or Opera';
+    document.body.style.fontSize = '2em';
+}
