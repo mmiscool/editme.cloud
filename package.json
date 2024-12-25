@@ -4,7 +4,7 @@
   "homepage": "https://github.com/mmiscool/aiCoder",
   "scripts": {
     "start": "./node_modules/.bin/parcel ./src/index.html",
-    "build": "./node_modules/.bin/parcel watch ./src/index.html --no-hmr"
+    "build": "./node_modules/.bin/parcel build ./src/index.html"
   },
   "targets": {
     "default": {
