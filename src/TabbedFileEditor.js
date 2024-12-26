@@ -534,7 +534,19 @@ export class TabbedFileEditor {
         }
     }
     async closeTab(tab) {
+        // Prevent auto-save on tab close
         this.stopFileWatcher();
+        // Remove the tab from the tab bar
+        this.tabBar.removeChild(tab);
+        // Check if any tab remains open
+        if (this.tabBar.childElementCount > 0) {
+            this.tabBar.children[0].click();
+        } else {
+            // Clear Monaco Editor content only if no other tabs are open
+            this.monacoEditor.setValue('');
+            this.currentFileHandle = null;
+            this.clearFileTreeHighlight();
+        }
     }
     addNewFileButton() {
         this.addToolbarButton({
