@@ -219,7 +219,6 @@ export class TabbedFileEditor {
         try {
             const writable = await this.currentFileHandle.createWritable();
             const content = this.monacoEditor.getValue();
-            // Retrieve Monaco Editor content
             await writable.write(content);
             await writable.close();
             console.log('Auto-saved successfully.');
@@ -472,12 +471,13 @@ export class TabbedFileEditor {
     startFileWatcher(fileHandle) {
         this.stopFileWatcher();
         let lastFileModified = null;
+        let isSaving = false;
         const watcher = async () => {
             try {
                 const file = await fileHandle.getFile();
                 const fileModifiedTime = file.lastModified;
-                // Check if the file has been modified since last check and not while saving
-                if (lastFileModified !== fileModifiedTime) {
+                // Only proceed if changes are detected and no save is in progress
+                if (lastFileModified !== fileModifiedTime && !isSaving) {
                     lastFileModified = fileModifiedTime;
                     const newContent = await file.text();
                     // Only update the editor if the content is different
@@ -493,6 +493,13 @@ export class TabbedFileEditor {
         this.fileWatchInterval = setInterval(async () => {
             await watcher();
         }, 1000);
+        // Override autoSave to set the saving state
+        const originalAutoSave = this.autoSave.bind(this);
+        this.autoSave = async () => {
+            isSaving = true;
+            await originalAutoSave();
+            isSaving = false;
+        };
     }
     stopFileWatcher() {
         if (this.fileWatchInterval) {
