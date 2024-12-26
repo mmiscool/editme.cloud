@@ -1,9 +1,8 @@
 .aider*
 node_modules
 
-*aiCoder/*key*
+*aiCoder/llmConfig/*key*
 *aiCoder/backups/*
-.aiCoder/*
 
 .parcel-cache/*
 dist/*

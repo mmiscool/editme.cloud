@@ -1,0 +1,41 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "Right now I can't drag and drop a file to move it to a new folder. The file is draggable but I can't drop it on the folder as a target. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    setupDragAndDrop(fileElement, handle) {\n        fileElement.draggable = true;\n        \n        fileElement.addEventListener('dragstart', e => {\n            e.stopPropagation();\n            const dragData = {\n                handle: handle,\n                name: handle.name,\n                kind: handle.kind,\n                path: this.filePaths.get(handle)\n            };\n            e.dataTransfer.setData('application/json', JSON.stringify(dragData));\n            e.dataTransfer.effectAllowed = 'move';\n        });\n\n        if (handle.kind === 'directory') {\n            fileElement.addEventListener('dragover', e => {\n                e.preventDefault();\n                e.stopPropagation();\n                fileElement.style.backgroundColor = '#444444';\n                e.dataTransfer.dropEffect = 'move';\n            });\n\n            fileElement.addEventListener('dragleave', e => {\n                e.preventDefault();\n                e.stopPropagation();\n                fileElement.style.backgroundColor = '';\n            });\n\n            fileElement.addEventListener('drop', async e => {\n                e.preventDefault();\n                e.stopPropagation();\n                fileElement.style.backgroundColor = '';\n                const dragDataStr = e.dataTransfer.getData('application/json');\n                const dragData = JSON.parse(dragDataStr);\n                await this.moveFile(dragData, handle);\n            });\n        }\n    }\n}\n```"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241226_072503280Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-26T07:25:56.534Z"
+}

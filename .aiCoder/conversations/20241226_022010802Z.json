@@ -1,0 +1,65 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "I want it to make it so that if the file changes locally and the file is open in the tabbed editor that it updates the file displayed in the editor. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async openFile(fileHandle) {\n        const file = await fileHandle.getFile();\n        const fileContent = await file.text();\n        this.currentFileHandle = fileHandle;\n        this.createTab(fileHandle.name, fileHandle, fileContent);\n        this.startFileWatcher(fileHandle);\n    }\n\n    startFileWatcher(fileHandle) {\n        this.stopFileWatcher(); // Stop any existing watcher\n        const watcher = async () => {\n            try {\n                const file = await fileHandle.getFile();\n                const newContent = await file.text();\n                this.monacoEditor.setValue(newContent);\n            } catch (error) {\n                console.error('Failed to read updated file:', error);\n            }\n        };\n\n        this.fileWatchInterval = setInterval(async () => {\n            await watcher();\n        }, 1000);\n    }\n    \n    stopFileWatcher() {\n        if (this.fileWatchInterval) {\n            clearInterval(this.fileWatchInterval);\n            this.fileWatchInterval = null;\n        }\n    }\n\n    async closeTab(tab) {\n        // ... existing close tab logic\n        this.stopFileWatcher();\n    }\n\n    // ... other existing methods\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "So that code is not working quite right. It is constantly refreshing the file. It should only refresh the file in the editor if it has changed on the local macine since it was last save or loaded in the browser. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async openFile(fileHandle) {\n        const file = await fileHandle.getFile();\n        const fileContent = await file.text();\n        this.currentFileHandle = fileHandle;\n        this.createTab(fileHandle.name, fileHandle, fileContent);\n        this.startFileWatcher(fileHandle);\n    }\n\n    startFileWatcher(fileHandle) {\n        this.stopFileWatcher(); // Stop any existing watcher\n        let lastFileModified = null;\n        \n        const watcher = async () => {\n            try {\n                const file = await fileHandle.getFile();\n                const fileModifiedTime = file.lastModified;\n                \n                // Check if the file has been modified since last check\n                if (lastFileModified === null || fileModifiedTime > lastFileModified) {\n                    lastFileModified = fileModifiedTime;\n                    const newContent = await file.text();\n                    this.monacoEditor.setValue(newContent);\n                }\n            } catch (error) {\n                console.error('Failed to read updated file:', error);\n            }\n        };\n\n        this.fileWatchInterval = setInterval(async () => {\n            await watcher();\n        }, 1000);\n    }\n\n    stopFileWatcher() {\n        if (this.fileWatchInterval) {\n            clearInterval(this.fileWatchInterval);\n            this.fileWatchInterval = null;\n        }\n    }\n\n    async closeTab(tab) {\n        // ... existing close tab logic\n        this.stopFileWatcher();\n    }\n\n    // ... other existing methods\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "It is still constantly reloading the editor. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async openFile(fileHandle) {\n        const file = await fileHandle.getFile();\n        const fileContent = await file.text();\n        this.currentFileHandle = fileHandle;\n        this.createTab(fileHandle.name, fileHandle, fileContent);\n        this.startFileWatcher(fileHandle);\n    }\n\n    startFileWatcher(fileHandle) {\n        this.stopFileWatcher(); // Stop any existing watcher\n        let lastFileModified = null;\n\n        const watcher = async () => {\n            try {\n                const file = await fileHandle.getFile();\n                const fileModifiedTime = file.lastModified;\n\n                // Check if the file has been modified since last check and not while saving\n                if (lastFileModified !== fileModifiedTime) {\n                    lastFileModified = fileModifiedTime;\n                    const newContent = await file.text();\n\n                    // Only update the editor if the content is different\n                    const currentContent = this.monacoEditor.getValue();\n                    if (newContent !== currentContent) {\n                        this.monacoEditor.setValue(newContent);\n                    }\n                }\n            } catch (error) {\n                console.error('Failed to read updated file:', error);\n            }\n        };\n\n        this.fileWatchInterval = setInterval(async () => {\n            await watcher();\n        }, 1000);\n    }\n\n    stopFileWatcher() {\n        if (this.fileWatchInterval) {\n            clearInterval(this.fileWatchInterval);\n            this.fileWatchInterval = null;\n        }\n    }\n\n    async closeTab(tab) {\n        // ... existing close tab logic\n        this.stopFileWatcher();\n    }\n\n    // ... other existing methods\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "Ok. So now there is a problem. If the automatic save is triggered and you keep typing it detects that file was modified locally and refreshed the editor. \nSo we need to track the file change state a bit better. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async openFile(fileHandle) {\n        const file = await fileHandle.getFile();\n        const fileContent = await file.text();\n        this.currentFileHandle = fileHandle;\n        this.createTab(fileHandle.name, fileHandle, fileContent);\n        this.startFileWatcher(fileHandle);\n    }\n\n    startFileWatcher(fileHandle) {\n        this.stopFileWatcher(); // Stop any existing watcher\n        let lastFileModified = null;\n        let isSaving = false;\n\n        const watcher = async () => {\n            try {\n                const file = await fileHandle.getFile();\n                const fileModifiedTime = file.lastModified;\n\n                // Only proceed if changes are detected and no save is in progress\n                if (lastFileModified !== fileModifiedTime && !isSaving) {\n                    lastFileModified = fileModifiedTime;\n                    const newContent = await file.text();\n\n                    // Only update the editor if the content is different\n                    const currentContent = this.monacoEditor.getValue();\n                    if (newContent !== currentContent) {\n                        this.monacoEditor.setValue(newContent);\n                    }\n                }\n            } catch (error) {\n                console.error('Failed to read updated file:', error);\n            }\n        };\n\n        this.fileWatchInterval = setInterval(async () => {\n            await watcher();\n        }, 1000);\n\n        // Override autoSave to set the saving state\n        const originalAutoSave = this.autoSave.bind(this);\n        this.autoSave = async () => {\n            isSaving = true;\n            await originalAutoSave();\n            isSaving = false; // Reset the saving state after saving\n        };\n    }\n\n    stopFileWatcher() {\n        if (this.fileWatchInterval) {\n            clearInterval(this.fileWatchInterval);\n            this.fileWatchInterval = null;\n        }\n    }\n\n    async closeTab(tab) {\n        // ... existing close tab logic\n        this.stopFileWatcher();\n    }\n\n    // ... other existing methods\n\n    async autoSave() {\n        if (!this.currentFileHandle) return;\n        try {\n            const writable = await this.currentFileHandle.createWritable();\n            const content = this.monacoEditor.getValue();\n            await writable.write(content);\n            await writable.close();\n            console.log('Auto-saved successfully.');\n        } catch (error) {\n            console.error('Auto-save failed:', error);\n        }\n    }\n}\n```"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241226_022010802Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-26T03:12:30.844Z"
+}

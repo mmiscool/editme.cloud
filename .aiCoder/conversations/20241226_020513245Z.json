@@ -1,0 +1,41 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "Modify the generateUI method in the TabbedFileEditor class.\nBreak this in to seperate methods for generating each UI element. \nMake the generateUI() method call these other methods. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\nexport class TabbedFileEditor {\n    constructor(container) {\n        this.container = container;\n        this.directoryHandle = null;\n        this.filePaths = new Map();\n        this.editorArea = null;\n        this.tabBar = null;\n        this.fileTreeContainer = null;\n        this.currentFileHandle = null;\n        this.fileTreeSnapshot = null;\n        this.generateUI();\n    }\n\n    generateUI() {\n        this.clearContainer();\n        this.setupContainerStyles();\n        this.createToolbar();\n        this.createMainContainer();\n    }\n\n    clearContainer() {\n        this.container.innerHTML = '';\n    }\n\n    setupContainerStyles() {\n        this.container.style.margin = '0';\n        this.container.style.fontFamily = 'Arial, sans-serif';\n        this.container.style.height = '100vh';\n        this.container.style.display = 'flex';\n        this.container.style.flexDirection = 'column';\n        this.container.style.color = '#ffffff';\n        this.container.style.fontSize = '12px';\n    }\n\n    createToolbar() {\n        this.toolbar = document.createElement('div');\n        this.toolbar.style.display = 'flex';\n        this.toolbar.style.backgroundColor = '#2e2e2e';\n        this.toolbar.style.padding = '5px';\n        this.toolbar.style.height = '40px';\n        this.toolbar.style.alignItems = 'center';\n        this.container.appendChild(this.toolbar);\n        this.addToolbarButton({\n            title: 'Open Folder',\n            toolTip: 'Open a folder to edit files',\n            callback: () => this.openFolder()\n        });\n    }\n\n    createMainContainer() {\n        const mainContainer = document.createElement('div');\n        mainContainer.style.display = 'flex';\n        mainContainer.style.flex = '1';\n        this.container.appendChild(mainContainer);\n        this.createFileTreeContainer(mainContainer);\n        this.createEditorContainer(mainContainer);\n    }\n\n    createFileTreeContainer(mainContainer) {\n        this.fileTreeContainer = document.createElement('div');\n        this.fileTreeContainer.style.width = '300px';\n        this.fileTreeContainer.style.backgroundColor = '#2e2e2e';\n        this.fileTreeContainer.style.color = '#ffffff';\n        this.fileTreeContainer.style.padding = '10px';\n        this.fileTreeContainer.style.overflowX = 'scroll';\n        this.fileTreeContainer.style.overflowY = 'auto';\n        mainContainer.appendChild(this.fileTreeContainer);\n    }\n\n    createEditorContainer(mainContainer) {\n        const editorContainer = document.createElement('div');\n        editorContainer.style.flex = '1';\n        editorContainer.style.display = 'flex';\n        editorContainer.style.flexDirection = 'column';\n        editorContainer.style.backgroundColor = '#1e1e1e';\n        mainContainer.appendChild(editorContainer);\n        this.createTabBar(editorContainer);\n        this.createEditorArea(editorContainer);\n    }\n\n    createTabBar(editorContainer) {\n        this.tabBar = document.createElement('div');\n        this.tabBar.style.display = 'flex';\n        this.tabBar.style.backgroundColor = '#3e3e3e';\n        this.tabBar.style.padding = '5px';\n        this.tabBar.style.height = '30px';\n        editorContainer.appendChild(this.tabBar);\n    }\n\n    createEditorArea(editorContainer) {\n        this.editorArea = document.createElement('div');\n        this.editorArea.style.flex = '1';\n        this.editorArea.style.width = '100%';\n        this.editorArea.style.height = 'calc(100% - 40px)';\n        editorContainer.appendChild(this.editorArea);\n        this.initializeMonacoEditor();\n    }\n\n    initializeMonacoEditor() {\n        this.monacoEditor = monaco.editor.create(this.editorArea, {\n            value: '',\n            language: 'javascript',\n            theme: 'vs-dark',\n            automaticLayout: false\n        });\n        this.monacoEditor.onDidChangeModelContent(() => {\n            this.autoSave();\n        });\n    }\n\n    // ... existing methods\n}\n```"
+    }
+  ],
+  "title": "Modify generateUI.TabbedFileEditor",
+  "id": "20241226_020513245Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-26T02:06:25.184Z"
+}

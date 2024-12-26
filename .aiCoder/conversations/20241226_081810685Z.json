@@ -1,0 +1,49 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "I want to add a new class that sets up a modal settings dialog. \n\nI want a button added to the toolbar labeled settings that will display this new dialog. \n\n"
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    constructor(container) {\n        this.container = container;\n        this.directoryHandle = null;\n        this.filePaths = new Map();\n        this.editorArea = null;\n        this.tabBar = null;\n        this.fileTreeContainer = null;\n        this.currentFileHandle = null;\n        this.fileTreeSnapshot = null;\n        this.generateUI();\n        this.settingsDialog = new SettingsDialog();\n    }\n\n    generateUI() {\n        this.clearContainer();\n        this.setupContainerStyles();\n        this.createToolbar();\n        this.createMainContainer();\n    }\n\n    createToolbar() {\n        this.toolbar = document.createElement('div');\n        this.toolbar.style.display = 'flex';\n        this.toolbar.style.backgroundColor = '#2e2e2e';\n        this.toolbar.style.padding = '5px';\n        this.toolbar.style.height = '40px';\n        this.toolbar.style.alignItems = 'center';\n        this.container.appendChild(this.toolbar);\n        this.addToolbarButton({\n            title: 'Open Folder',\n            toolTip: 'Open a folder to edit files',\n            callback: () => this.openFolder()\n        });\n        this.addToolbarButton({\n            title: 'Settings',\n            toolTip: 'Open settings dialog',\n            callback: () => this.settingsDialog.open()\n        });\n    }\n\n    addToolbarButton({ title, toolTip, callback }) {\n        const button = document.createElement('button');\n        button.textContent = title;\n        button.title = toolTip;\n        button.style.marginRight = '10px';\n        button.style.padding = '5px 10px';\n        button.style.backgroundColor = '#444';\n        button.style.color = '#fff';\n        button.style.border = 'none';\n        button.style.cursor = 'pointer';\n        button.addEventListener('click', callback);\n        this.toolbar.appendChild(button);\n    }\n}\n\nclass SettingsDialog {\n    constructor() {\n        this.dialog = null;\n    }\n\n    open() {\n        if (!this.dialog) {\n            this.createDialog();\n        }\n        this.dialog.style.display = 'block';\n    }\n\n    close() {\n        if (this.dialog) {\n            this.dialog.style.display = 'none';\n        }\n    }\n\n    createDialog() {\n        this.dialog = document.createElement('div');\n        this.dialog.style.position = 'fixed';\n        this.dialog.style.top = '50%';\n        this.dialog.style.left = '50%';\n        this.dialog.style.transform = 'translate(-50%, -50%)';\n        this.dialog.style.width = '400px';\n        this.dialog.style.height = '300px';\n        this.dialog.style.backgroundColor = '#fff';\n        this.dialog.style.border = '1px solid #ccc';\n        this.dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';\n        this.dialog.style.display = 'none';\n        this.dialog.style.zIndex = '1001';\n\n        const closeButton = document.createElement('button');\n        closeButton.textContent = 'Close';\n        closeButton.style.marginTop = '10px';\n        closeButton.addEventListener('click', () => this.close());\n        this.dialog.appendChild(closeButton);\n\n        document.body.appendChild(this.dialog);\n    }\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "I want the dialog to be much larger. It should be offset from the edges of the browser window by 30px. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    constructor(container) {\n        this.container = container;\n        this.directoryHandle = null;\n        this.filePaths = new Map();\n        this.editorArea = null;\n        this.tabBar = null;\n        this.fileTreeContainer = null;\n        this.currentFileHandle = null;\n        this.fileTreeSnapshot = null;\n        this.generateUI();\n        this.settingsDialog = new SettingsDialog();\n    }\n\n    generateUI() {\n        this.clearContainer();\n        this.setupContainerStyles();\n        this.createToolbar();\n        this.createMainContainer();\n    }\n\n    createToolbar() {\n        this.toolbar = document.createElement('div');\n        this.toolbar.style.display = 'flex';\n        this.toolbar.style.backgroundColor = '#2e2e2e';\n        this.toolbar.style.padding = '5px';\n        this.toolbar.style.height = '40px';\n        this.toolbar.style.alignItems = 'center';\n        this.container.appendChild(this.toolbar);\n        this.addToolbarButton({\n            title: 'Open Folder',\n            toolTip: 'Open a folder to edit files',\n            callback: () => this.openFolder()\n        });\n        this.addToolbarButton({\n            title: 'Settings',\n            toolTip: 'Open settings dialog',\n            callback: () => this.settingsDialog.open()\n        });\n    }\n\n    addToolbarButton({ title, toolTip, callback }) {\n        const button = document.createElement('button');\n        button.textContent = title;\n        button.title = toolTip;\n        button.style.marginRight = '10px';\n        button.style.padding = '5px 10px';\n        button.style.backgroundColor = '#444';\n        button.style.color = '#fff';\n        button.style.border = 'none';\n        button.style.cursor = 'pointer';\n        button.addEventListener('click', callback);\n        this.toolbar.appendChild(button);\n    }\n}\n\nclass SettingsDialog {\n    constructor() {\n        this.dialog = null;\n    }\n\n    open() {\n        if (!this.dialog) {\n            this.createDialog();\n        }\n        this.dialog.style.display = 'block';\n    }\n\n    close() {\n        if (this.dialog) {\n            this.dialog.style.display = 'none';\n        }\n    }\n\n    createDialog() {\n        this.dialog = document.createElement('div');\n        this.dialog.style.position = 'fixed';\n        this.dialog.style.top = '30px';\n        this.dialog.style.left = '30px';\n        this.dialog.style.width = 'calc(100% - 60px)';\n        this.dialog.style.height = 'calc(100% - 60px)';\n        this.dialog.style.backgroundColor = '#fff';\n        this.dialog.style.border = '1px solid #ccc';\n        this.dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';\n        this.dialog.style.display = 'none';\n        this.dialog.style.zIndex = '1001';\n\n        const closeButton = document.createElement('button');\n        closeButton.textContent = 'Close';\n        closeButton.style.marginTop = '10px';\n        closeButton.addEventListener('click', () => this.close());\n        this.dialog.appendChild(closeButton);\n\n        document.body.appendChild(this.dialog);\n    }\n}\n```"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241226_081810685Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-26T08:20:52.636Z"
+}

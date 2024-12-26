@@ -1,0 +1,57 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "The drag and drop for moving a file from one folder to another is working for the most part. The only problem it has is that it dose not remove the file from its original location after it has copied it to the new location. After the file has been copied to the new location it should delete the file from its original location. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    // ... existing methods\n    \n    async moveFileToTarget(fileHandle, targetDirHandle) {\n        const file = await fileHandle.getFile();\n        const content = await file.text();\n        const newHandle = await targetDirHandle.getFileHandle(fileHandle.name, { create: true });\n        const writable = await newHandle.createWritable();\n        await writable.write(content);\n        await writable.close();\n        \n        const sourceParentHandle = await this.getParentDirectoryHandle(fileHandle);\n        if (sourceParentHandle) {\n            await sourceParentHandle.removeEntry(fileHandle.name); // Remove from original location\n        }\n        \n        this.updateFilePath(newHandle, `${ this.filePaths.get(targetDirHandle) }/${ fileHandle.name }`);\n        this.filePaths.delete(fileHandle);\n    }\n    \n    // ... existing methods\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "I think it should be using the deleteFileOrFolder method to remove the original file. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async moveFileToTarget(fileHandle, targetDirHandle) {\n        const file = await fileHandle.getFile();\n        const content = await file.text();\n        const newHandle = await targetDirHandle.getFileHandle(fileHandle.name, { create: true });\n        const writable = await newHandle.createWritable();\n        await writable.write(content);\n        await writable.close();\n        \n        const sourceParentHandle = await this.getParentDirectoryHandle(fileHandle);\n        if (sourceParentHandle) {\n            const fileElement = this.fileTreeContainer.querySelector(`[data-full-path=\"${this.filePaths.get(fileHandle)}\"]`);\n            await this.deleteFileOrFolder(fileHandle, fileElement); // Use the delete method\n        }\n        \n        this.updateFilePath(newHandle, `${ this.filePaths.get(targetDirHandle) }/${ fileHandle.name }`);\n    }\n    \n    // ... existing methods\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "Modify that to ask the user if they want to move the file or copy it. Use a confirm() function to ask the user this question and to trigger the delete or not to delete the original file. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async moveFileToTarget(fileHandle, targetDirHandle) {\n        const file = await fileHandle.getFile();\n        const content = await file.text();\n        const newHandle = await targetDirHandle.getFileHandle(fileHandle.name, { create: true });\n        const writable = await newHandle.createWritable();\n        await writable.write(content);\n        await writable.close();\n\n        const userConfirmation = confirm('Do you want to move the file? (Press OK to move, Cancel to copy)');\n        \n        if (userConfirmation) {\n            const sourceParentHandle = await this.getParentDirectoryHandle(fileHandle);\n            if (sourceParentHandle) {\n                const fileElement = this.fileTreeContainer.querySelector(`[data-full-path=\"${this.filePaths.get(fileHandle)}\"]`);\n                await this.deleteFileOrFolder(fileHandle, fileElement); // Use the delete method\n            }\n        }\n        \n        this.updateFilePath(newHandle, `${ this.filePaths.get(targetDirHandle) }/${ fileHandle.name }`);\n    }\n    \n    // ... existing methods\n}\n```"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241226_073744188Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-26T07:44:06.856Z"
+}
