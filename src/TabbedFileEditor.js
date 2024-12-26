@@ -471,11 +471,21 @@ export class TabbedFileEditor {
     }
     startFileWatcher(fileHandle) {
         this.stopFileWatcher();
+        let lastFileModified = null;
         const watcher = async () => {
             try {
                 const file = await fileHandle.getFile();
-                const newContent = await file.text();
-                this.monacoEditor.setValue(newContent);
+                const fileModifiedTime = file.lastModified;
+                // Check if the file has been modified since last check and not while saving
+                if (lastFileModified !== fileModifiedTime) {
+                    lastFileModified = fileModifiedTime;
+                    const newContent = await file.text();
+                    // Only update the editor if the content is different
+                    const currentContent = this.monacoEditor.getValue();
+                    if (newContent !== currentContent) {
+                        this.monacoEditor.setValue(newContent);
+                    }
+                }
             } catch (error) {
                 console.error('Failed to read updated file:', error);
             }
