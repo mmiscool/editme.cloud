@@ -420,32 +420,6 @@ export class TabbedFileEditor {
             highlighted.style.color = '';
         }
     }
-    async generateFileTreeSnapshot(directoryHandle, currentPath = '') {
-        const snapshot = {};
-        for await (const [name, handle] of directoryHandle.entries()) {
-            const fullPath = `${currentPath}/${name}`;
-            snapshot[fullPath] = handle.kind;
-            if (handle.kind === 'directory') {
-                snapshot[fullPath] = await this.generateFileTreeSnapshot(handle, fullPath);
-            }
-        }
-        return snapshot;
-    }
-    setupResizer() {
-        // add an event listener to the window object that detects when the window is resized
-        window.addEventListener('resize', () => {
-            // call the resizeEditor method
-            if (this.monacoEditor) {
-                const editorContainer = this.editorArea.parentElement;
-                console.log(editorContainer.offsetWidth);
-                const fileTreeWidth = this.fileTreeContainer.offsetWidth;
-                // get width of the window in pixels
-                const windowWidth = window.innerWidth;
-                this.editorArea.style.width = `calc(${windowWidth}px - ${fileTreeWidth}px)`;
-                this.monacoEditor.layout();
-            }
-        });
-    }
     addToolbarButton({ title, toolTip, callback }) {
         const button = document.createElement('button');
         button.textContent = title;
@@ -572,26 +546,7 @@ export class TabbedFileEditor {
             return null;
         }
     }
-    async getCurrentPath(handle) {
-        // Try to get path from filePaths map
-        let path = this.filePaths.get(handle);
-        if (!path) {
-            // Fallback: Try to reconstruct path from handle
-            try {
-                if (handle.kind === 'file') {
-                    path = handle.name;
-                    let parent = await this.getParentDirectoryHandle(handle);
-                    while (parent && parent !== this.directoryHandle) {
-                        path = `${parent.name}/${path}`;
-                        parent = await this.getParentDirectoryHandle(parent);
-                    }
-                }
-            } catch (error) {
-                console.warn('Could not reconstruct path:', error);
-            }
-        }
-        return path;
-    }
+
     async findParentInDirectory(dirHandle, targetHandle) {
         try {
             for await (const entry of dirHandle.values()) {
@@ -775,16 +730,7 @@ export class TabbedFileEditor {
             t.style.filter = '';
         });
     }
-    async confirmDiscardChanges() {
-        if (!this.currentFileHandle || this.lastEditorContent === this.monacoEditor.getValue()) {
-            return true;
-        }
-        // No unsaved changes to worry about.
-        return new Promise(resolve => {
-            const confirmation = confirm('You have unsaved changes. Do you really want to refresh? Changes will be lost.');
-            resolve(confirmation);
-        });
-    }
+
     stopAutoRefresh() {
         if (this.fileWatchInterval) {
             clearInterval(this.fileWatchInterval);
