@@ -114,13 +114,17 @@ export class TabbedFileEditor {
     }
     async listFiles(directoryHandle, parentElement, currentPath = '', expandedPaths = new Set()) {
         for await (const [name, handle] of directoryHandle.entries()) {
-            const fullPath = `${ currentPath }/${ name }`;
+            const fullPath = `${ currentPath }${ name }`;
             this.filePaths.set(handle, fullPath);
             const fileElement = document.createElement('div');
             fileElement.style.padding = '5px';
             fileElement.style.cursor = 'pointer';
             fileElement.dataset.fullPath = fullPath;
             fileElement.dataset.kind = handle.kind;
+            // Set up context menu
+            this.setupContextMenu(fileElement, handle);
+            // Set up drag-and-drop events
+            this.setupDragAndDropEvents(fileElement, handle);
             if (handle.kind === 'file') {
                 fileElement.textContent = `📄 ${ name }`;
                 fileElement.addEventListener('click', e => {
@@ -128,32 +132,32 @@ export class TabbedFileEditor {
                     this.openFile(handle);
                 });
             } else if (handle.kind === 'directory') {
+                const directoryContent = document.createElement('div');
+                directoryContent.style.paddingLeft = '20px';
+                directoryContent.style.display = 'none';
                 fileElement.textContent = `📁 ${ name }`;
-                fileElement.style.fontWeight = 'bold';
-                const subTreeContainer = document.createElement('div');
-                subTreeContainer.style.marginLeft = '10px';
-                const isExpanded = expandedPaths.has(fullPath) || fileElement.dataset.expanded === 'true';
-                subTreeContainer.style.display = isExpanded ? 'block' : 'none';
-                fileElement.dataset.expanded = isExpanded ? 'true' : 'false';
-                fileElement.appendChild(subTreeContainer);
-                if (isExpanded) {
-                    await this.listFiles(handle, subTreeContainer, fullPath, expandedPaths);
-                }
+                fileElement.dataset.expanded = 'false';
                 fileElement.addEventListener('click', async e => {
                     e.stopPropagation();
-                    const isCurrentlyExpanded = fileElement.dataset.expanded === 'true';
-                    fileElement.dataset.expanded = isCurrentlyExpanded ? 'false' : 'true';
-                    subTreeContainer.style.display = isCurrentlyExpanded ? 'none' : 'block';
-                    if (!isCurrentlyExpanded && subTreeContainer.childElementCount === 0) {
-                        await this.listFiles(handle, subTreeContainer, fullPath, expandedPaths);
+                    const isExpanded = fileElement.dataset.expanded === 'true';
+                    if (!isExpanded) {
+                        directoryContent.style.display = 'block';
+                        fileElement.dataset.expanded = 'true';
+                        if (directoryContent.children.length === 0) {
+                            await this.listFiles(handle, directoryContent, `${ fullPath }/`, expandedPaths);
+                        }
+                    } else {
+                        directoryContent.style.display = 'none';
+                        fileElement.dataset.expanded = 'false';
                     }
                 });
+                parentElement.appendChild(fileElement);
+                parentElement.appendChild(directoryContent);
+                if (expandedPaths.has(fullPath)) {
+                    fileElement.click();
+                }
+                continue;
             }
-            fileElement.addEventListener('contextmenu', event => {
-                event.preventDefault();
-                event.stopPropagation();
-                this.showContextMenu(event, handle, fileElement);
-            });
             parentElement.appendChild(fileElement);
         }
     }
@@ -341,45 +345,60 @@ export class TabbedFileEditor {
             }
         }
     }
-    async getParentDirectoryHandle(fileHandle) {
-        // Retrieve the parent path from the filePaths map
-        const fullPath = this.filePaths.get(fileHandle);
-        if (!fullPath) {
-            throw new Error('File path not found.');
-        }
-        const parentPath = fullPath.split('/').slice(0, -1).join('/');
-        // Find the directory handle for the parent path
-        for (const [key, path] of this.filePaths.entries()) {
-            if (path === parentPath && key.kind === 'directory') {
-                return key;
+    async getParentDirectoryHandle(handle) {
+        try {
+            // If we have the path in our map, use it
+            const path = this.filePaths.get(handle);
+            if (path) {
+                const parentPath = path.split('/').slice(0, -1).join('/');
+                return await this.resolvePathToHandle(parentPath);
             }
+            // Fallback: Try to get parent from directory structure
+            let current = this.directoryHandle;
+            const entries = [];
+            for await (const entry of current.values()) {
+                entries.push(entry);
+                if (entry === handle) {
+                    return current;
+                }
+                if (entry.kind === 'directory') {
+                    const result = await this.findParentInDirectory(entry, handle);
+                    if (result)
+                        return result;
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('Error in getParentDirectoryHandle:', error);
+            return null;
         }
-        throw new Error('Parent directory not found.');
     }
     updateFilePath(handle, newPath) {
         // Update the entry in the filePaths map
         this.filePaths.set(handle, newPath);
     }
     async resolveParentHandle(fileHandle) {
-        // Retrieve the parent path from the filePaths map
         const filePath = this.filePaths.get(fileHandle);
         if (!filePath) {
-            throw new Error('File path not found.');
+            console.warn('No file path found for the provided file handle.');
+            return null;
         }
         const pathParts = filePath.split('/');
-        // Get the path parts
         pathParts.pop();
-        // Remove the file/folder name to get the parent path
         let currentHandle = this.directoryHandle;
-        // Start from the root directory
+        // Iterate through the path parts to find the parent directory handle
         for (const part of pathParts) {
             if (!part) {
                 continue;
             }
-            // Skip empty parts
-            currentHandle = await currentHandle.getDirectoryHandle(part, { create: false });
+            try {
+                currentHandle = await currentHandle.getDirectoryHandle(part, { create: false });
+            } catch (error) {
+                console.error(`Could not resolve the directory handle for part: ${ part }`);
+                return null;
+            }
         }
-        // Navigate to each directory
+        // Return null if a part of the path is not found
         return currentHandle;
     }
     async refreshFileTree() {
@@ -605,5 +624,244 @@ export class TabbedFileEditor {
                 this.clearFileTreeHighlight();
             }
         }
+    }
+    extractFileName(path) {
+        const parts = path.split('/');
+        return parts[parts.length - 1];
+    }
+    async resolvePathToHandle(path) {
+        try {
+            if (!path)
+                return null;
+            const parts = path.split('/').filter(part => part.length > 0);
+            let currentHandle = this.directoryHandle;
+            for (const part of parts) {
+                if (!currentHandle)
+                    break;
+                try {
+                    // Try to get as directory first
+                    currentHandle = await currentHandle.getDirectoryHandle(part);
+                } catch {
+                    try {
+                        // If not a directory, try as file
+                        currentHandle = await currentHandle.getFileHandle(part);
+                    } catch {
+                        currentHandle = null;
+                    }
+                }
+            }
+            return currentHandle;
+        } catch (error) {
+            console.error('Error resolving path to handle:', error);
+            return null;
+        }
+    }
+    async getCurrentPath(handle) {
+        // Try to get path from filePaths map
+        let path = this.filePaths.get(handle);
+        if (!path) {
+            // Fallback: Try to reconstruct path from handle
+            try {
+                if (handle.kind === 'file') {
+                    path = handle.name;
+                    let parent = await this.getParentDirectoryHandle(handle);
+                    while (parent && parent !== this.directoryHandle) {
+                        path = `${ parent.name }/${ path }`;
+                        parent = await this.getParentDirectoryHandle(parent);
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not reconstruct path:', error);
+            }
+        }
+        return path;
+    }
+    async findParentInDirectory(dirHandle, targetHandle) {
+        try {
+            for await (const entry of dirHandle.values()) {
+                if (entry === targetHandle) {
+                    return dirHandle;
+                }
+                if (entry.kind === 'directory') {
+                    const result = await this.findParentInDirectory(entry, targetHandle);
+                    if (result)
+                        return result;
+                }
+            }
+            return null;
+        } catch (error) {
+            console.warn('Error in findParentInDirectory:', error);
+            return null;
+        }
+    }
+    setupDragAndDrop(fileElement, handle) {
+        fileElement.draggable = true;
+        fileElement.addEventListener('dragstart', e => {
+            e.stopPropagation();
+            const dragData = {
+                handle: handle,
+                name: handle.name,
+                kind: handle.kind,
+                path: this.filePaths.get(handle)
+            };
+            e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        if (handle.kind === 'directory') {
+            fileElement.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileElement.style.backgroundColor = '#444444';
+                e.dataTransfer.dropEffect = 'move';
+            });
+            fileElement.addEventListener('dragleave', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileElement.style.backgroundColor = '';
+            });
+            fileElement.addEventListener('drop', async e => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileElement.style.backgroundColor = '';
+                const dragDataStr = e.dataTransfer.getData('application/json');
+                const dragData = JSON.parse(dragDataStr);
+                await this.moveFile(dragData, handle);
+            });
+        }
+    }
+    async moveFileToDirectory(sourceHandle, targetDirHandle) {
+        const file = await sourceHandle.getFile();
+        const content = await file.text();
+        const newHandle = await targetDirHandle.getFileHandle(sourceHandle.name, { create: true });
+        const writable = await newHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        // Remove original file
+        const sourceParent = await this.getParentDirectoryHandle(sourceHandle);
+        if (sourceParent) {
+            await sourceParent.removeEntry(sourceHandle.name);
+        }
+        // Update file paths
+        const newPath = `${ this.filePaths.get(targetDirHandle) }/${ sourceHandle.name }`;
+        this.filePaths.delete(sourceHandle);
+        this.filePaths.set(newHandle, newPath);
+    }
+    async isSubdirectory(parentDir, potentialSubDir) {
+        try {
+            let current = potentialSubDir;
+            while (current !== this.directoryHandle) {
+                if (current === parentDir) {
+                    return true;
+                }
+                current = await this.getParentDirectoryHandle(current);
+                if (!current)
+                    break;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error checking subdirectory:', error);
+            return false;
+        }
+    }
+    async moveFile(draggedData, targetDirHandle) {
+        try {
+            if (!draggedData || !targetDirHandle) {
+                throw new Error('Source or target directory handle is missing');
+            }
+            const sourceHandle = await this.resolvePathToHandle(draggedData.path);
+            if (!sourceHandle) {
+                throw new Error('Could not resolve source handle');
+            }
+            if (draggedData.kind !== 'file' && draggedData.kind !== 'directory') {
+                throw new Error('Invalid item type for move operation');
+            }
+            if (draggedData.kind === 'file') {
+                await this.moveFileToTarget(sourceHandle, targetDirHandle);
+            } else if (draggedData.kind === 'directory') {
+                await this.moveDirectoryToTarget(sourceHandle, targetDirHandle);
+            }
+            await this.refreshFileTree();
+        } catch (error) {
+            console.error('Error moving item:', error);
+            alert(`Failed to move: ${ error.message }`);
+        }
+    }
+    async moveFileToTarget(fileHandle, targetDirHandle) {
+        const file = await fileHandle.getFile();
+        const content = await file.text();
+        const newHandle = await targetDirHandle.getFileHandle(fileHandle.name, { create: true });
+        const writable = await newHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        const userConfirmation = confirm('Do you want to move the file? (Press OK to move, Cancel to copy)');
+        if (userConfirmation) {
+            const sourceParentHandle = await this.getParentDirectoryHandle(fileHandle);
+            if (sourceParentHandle) {
+                const fileElement = this.fileTreeContainer.querySelector(`[data-full-path="${ this.filePaths.get(fileHandle) }"]`);
+                await this.deleteFileOrFolder(fileHandle, fileElement);
+            }
+        }
+        // Use the delete method
+        this.updateFilePath(newHandle, `${ this.filePaths.get(targetDirHandle) }/${ fileHandle.name }`);
+    }
+    async moveDirectoryToTarget(dirHandle, targetDirHandle) {
+        const newDirHandle = await targetDirHandle.getDirectoryHandle(dirHandle.name, { create: true });
+        for await (const [name, handle] of dirHandle.entries()) {
+            if (handle.kind === 'file') {
+                await this.moveFileToTarget(handle, newDirHandle);
+            } else {
+                await this.moveDirectoryToTarget(handle, newDirHandle);
+            }
+        }
+        const sourceParentHandle = await this.getParentDirectoryHandle(dirHandle);
+        if (sourceParentHandle) {
+            await sourceParentHandle.removeEntry(dirHandle.name, { recursive: true });
+        }
+        this.updateFilePath(newDirHandle, `${ this.filePaths.get(targetDirHandle) }/${ dirHandle.name }`);
+        this.filePaths.delete(dirHandle);
+    }
+    setupDragAndDropEvents(fileElement, handle) {
+        fileElement.draggable = true;
+        fileElement.addEventListener('dragstart', e => {
+            e.stopPropagation();
+            const currentPath = this.filePaths.get(handle);
+            const dragData = {
+                path: currentPath,
+                name: handle.name,
+                kind: handle.kind
+            };
+            e.dataTransfer.setData('application/json', JSON.stringify(dragData));
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        // Enable drag-and-drop for directories as well
+        fileElement.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'move';
+        });
+        fileElement.addEventListener('drop', async e => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+                const dragDataStr = e.dataTransfer.getData('application/json');
+                const dragData = JSON.parse(dragDataStr);
+                if (!dragData || !dragData.path) {
+                    throw new Error('Invalid drag data: source path missing');
+                }
+                // Determine the proper target directory
+                const targetDirectory = handle.kind === 'directory' ? handle : await this.getParentDirectoryHandle(handle);
+                await this.moveFile(dragData, targetDirectory);
+                await this.refreshFileTree();
+            } catch (error) {
+                console.error('Drop error:', error);
+                alert(`Failed to move file: ${ error.message }`);
+            }
+        });
+    }
+    setupContextMenu(fileElement, handle) {
+        fileElement.addEventListener('contextmenu', event => {
+            event.preventDefault();
+            this.showContextMenu(event, handle, fileElement);
+        });
     }
 }
