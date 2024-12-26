@@ -162,6 +162,7 @@ export class TabbedFileEditor {
         const fileContent = await file.text();
         this.currentFileHandle = fileHandle;
         this.createTab(fileHandle.name, fileHandle, fileContent);
+        this.startFileWatcher(fileHandle);
     }
     async createTab(fileName, fileHandle, content) {
         const filePath = await this.getFilePath(fileHandle);
@@ -178,6 +179,8 @@ export class TabbedFileEditor {
         tab.style.marginRight = '5px';
         tab.style.backgroundColor = '#3e3e3e';
         tab.style.cursor = 'pointer';
+        tab.title = filePath;
+        // Set the tooltip to show the full file path
         tab.addEventListener('click', async () => {
             Array.from(this.tabBar.children).forEach(t => {
                 t.style.backgroundColor = '#3e3e3e';
@@ -465,5 +468,29 @@ export class TabbedFileEditor {
         button.style.cursor = 'pointer';
         button.addEventListener('click', callback);
         this.toolbar.appendChild(button);
+    }
+    startFileWatcher(fileHandle) {
+        this.stopFileWatcher();
+        const watcher = async () => {
+            try {
+                const file = await fileHandle.getFile();
+                const newContent = await file.text();
+                this.monacoEditor.setValue(newContent);
+            } catch (error) {
+                console.error('Failed to read updated file:', error);
+            }
+        };
+        this.fileWatchInterval = setInterval(async () => {
+            await watcher();
+        }, 1000);
+    }
+    stopFileWatcher() {
+        if (this.fileWatchInterval) {
+            clearInterval(this.fileWatchInterval);
+            this.fileWatchInterval = null;
+        }
+    }
+    async closeTab(tab) {
+        this.stopFileWatcher();
     }
 }
