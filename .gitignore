@@ -6,3 +6,4 @@ node_modules
 
 .parcel-cache/*
 dist/*
+*aiCoder/llmConfig*key*

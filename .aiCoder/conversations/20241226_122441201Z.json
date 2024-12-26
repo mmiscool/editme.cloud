@@ -1,0 +1,65 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "There is a problem in that if I switch between tabs the file contents can be overwritten with an empty file. \n\n"
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async createTab(fileName, fileHandle, content) {\n        const filePath = await this.getFilePath(fileHandle);\n        const existingTab = Array.from(this.tabBar.children).find(tab => tab.dataset.filePath === filePath);\n        \n        if (existingTab) {\n            existingTab.click();\n            return;\n        }\n\n        const tab = document.createElement('div');\n        tab.textContent = fileName;\n        tab.dataset.filePath = filePath;\n        tab.style.padding = '2px';\n        tab.style.marginRight = '5px';\n        tab.style.height = '30px';\n        tab.style.border = '2px solid black';\n        tab.style.cursor = 'pointer';\n        tab.style.transition = 'filter 0.3s';\n        tab.style.backgroundColor = 'gray';\n\n        tab.addEventListener('click', async () => {\n            this.resetTabStyles();\n            tab.style.filter = 'invert(100%)';\n            this.currentFileHandle = fileHandle;\n            this.highlightActiveFileInTree(filePath);\n            \n            // Only set editor value if content has been changed\n            if (this.lastEditorContent !== content) {\n                this.monacoEditor.setValue(content);\n                this.lastEditorContent = content; // Update last content when switching tabs\n            }\n        });\n\n        const closeButton = document.createElement('span');\n        closeButton.textContent = '\\u274C';\n        closeButton.style.marginLeft = '10px';\n        closeButton.style.cursor = 'pointer';\n        closeButton.addEventListener('click', e => {\n            e.stopPropagation();\n            this.tabBar.removeChild(tab);\n            if (this.tabBar.childElementCount > 0) {\n                this.tabBar.children[0].click();\n            } else {\n                this.monacoEditor.setValue('');\n                this.currentFileHandle = null;\n                this.clearFileTreeHighlight();\n            }\n        });\n\n        tab.appendChild(closeButton);\n        this.tabBar.appendChild(tab);\n        tab.click();\n    }\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "Right now there is a problem that if the file is modified in the editor and has not been saved yet it can be refreshed from the local file system cause me to lose edits. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async refreshFileTree() {\n        if (!this.directoryHandle) {\n            return;\n        }\n\n        const shouldRefresh = await this.confirmDiscardChanges();\n        if (!shouldRefresh) {\n            return; // Do not proceed with the refresh if the user decides not to discard changes.\n        }\n\n        const expandedPaths = new Set();\n        this.fileTreeContainer.querySelectorAll('[data-full-path]').forEach(element => {\n            if (element.dataset.kind === 'directory' && element.dataset.expanded === 'true') {\n                expandedPaths.add(element.dataset.fullPath);\n            }\n        });\n\n        const newSnapshot = await this.generateFileTreeSnapshot(this.directoryHandle);\n        if (JSON.stringify(this.fileTreeSnapshot) === JSON.stringify(newSnapshot)) {\n            console.log('No changes detected. Skipping UI update.');\n            return;\n        }\n\n        this.fileTreeSnapshot = newSnapshot;\n        this.fileTreeContainer.innerHTML = '';\n        const fileTreeTitle = document.createElement('h3');\n        fileTreeTitle.textContent = 'File Tree';\n        fileTreeTitle.style.marginTop = '0';\n        fileTreeTitle.style.fontSize = '18px';\n        fileTreeTitle.style.textAlign = 'center';\n\n        const refreshButton = document.createElement('button');\n        refreshButton.textContent = 'Refresh';\n        refreshButton.style.marginBottom = '10px';\n        refreshButton.style.cursor = 'pointer';\n        refreshButton.style.backgroundColor = '#3e3e3e';\n        refreshButton.style.color = '#ffffff';\n        refreshButton.style.border = 'none';\n        refreshButton.addEventListener('click', () => this.refreshFileTree());\n\n        this.fileTreeContainer.appendChild(refreshButton);\n        this.fileTreeContainer.appendChild(fileTreeTitle);\n        await this.listFiles(this.directoryHandle, this.fileTreeContainer, '', expandedPaths);\n        if (this.currentFileHandle) {\n            const filePath = await this.getFilePath(this.currentFileHandle);\n            this.highlightActiveFileInTree(filePath);\n        }\n    }\n\n    async confirmDiscardChanges() {\n        if (!this.currentFileHandle || this.lastEditorContent === this.monacoEditor.getValue()) {\n            return true; // No unsaved changes to worry about.\n        }\n\n        return new Promise(resolve => {\n            const confirmation = confirm('You have unsaved changes. Do you really want to refresh? Changes will be lost.');\n            resolve(confirmation);\n        });\n    }\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "The automatic saving and auto refreshening the editor if a file is modified outside of the editor is completely broken. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async autoSave() {\n        if (!this.currentFileHandle) return;\n        try {\n            const writable = await this.currentFileHandle.createWritable();\n            const content = this.monacoEditor.getValue();\n            await writable.write(content);\n            await writable.close();\n            console.log('Auto-saved successfully.');\n            this.lastEditorContent = content;\n            this.lastSavedTimestamp = (await this.currentFileHandle.getFile()).lastModified;\n        } catch (error) {\n            console.error('Auto-save failed:', error);\n        }\n    }\n\n    async checkForFileUpdates(fileHandle) {\n        try {\n            const file = await fileHandle.getFile();\n            const currentFileModifiedTime = file.lastModified;\n            if (currentFileModifiedTime !== this.lastModifiedTime) {\n                const newContent = await file.text();\n                // Only update the editor if content is different and it was not modified by this editor\n                if (this.lastSavedTimestamp !== currentFileModifiedTime) {\n                    this.monacoEditor.setValue(newContent);\n                    this.lastEditorContent = newContent; // Update last content\n                    this.lastModifiedTime = currentFileModifiedTime; // Update last modified time\n                }\n            }\n        } catch (error) {\n            console.error('Failed to read updated file:', error);\n        }\n    }\n\n    startAutoRefresh() {\n        this.stopAutoRefresh(); // Ensure only one interval is active\n        this.autoSave();\n        this.fileWatchInterval = setInterval(async () => {\n            if (this.currentFileHandle) {\n                await Promise.all([\n                    this.autoSave(),\n                    this.checkForFileUpdates(this.currentFileHandle)\n                ]);\n            }\n        }, 3000);\n    }\n\n    stopAutoRefresh() {\n        if (this.fileWatchInterval) {\n            clearInterval(this.fileWatchInterval);\n            this.fileWatchInterval = null;\n        }\n    }\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "Files are not loading at all in to the editor. It creates a new tab but it never displays the contents of the file. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async openFile(fileHandle) {\n        const file = await fileHandle.getFile();\n        const fileContent = await file.text();\n        this.currentFileHandle = fileHandle;\n\n        // Create a new tab with the file content\n        await this.createTab(fileHandle.name, fileHandle, fileContent);\n\n        // Start file watcher\n        this.startFileWatcher(fileHandle);\n\n        this.lastEditorContent = fileContent; // Store the initial content for comparison\n        this.lastModifiedTime = file.lastModified; // Store last modified time\n    }\n\n    async createTab(fileName, fileHandle, content) {\n        const filePath = await this.getFilePath(fileHandle);\n        const existingTab = Array.from(this.tabBar.children).find(tab => tab.dataset.filePath === filePath);\n\n        if (existingTab) {\n            existingTab.click();\n            return;\n        }\n\n        const tab = document.createElement('div');\n        tab.textContent = fileName;\n        tab.dataset.filePath = filePath;\n        tab.style.padding = '2px';\n        tab.style.marginRight = '5px';\n        tab.style.height = '30px';\n        tab.style.border = '2px solid black';\n        tab.style.cursor = 'pointer';\n        tab.style.transition = 'filter 0.3s';\n        tab.style.backgroundColor = 'gray';\n\n        tab.addEventListener('click', async () => {\n            this.resetTabStyles();\n            tab.style.filter = 'invert(100%)';\n            this.currentFileHandle = fileHandle;\n            this.highlightActiveFileInTree(filePath);\n\n            // Set editor value to current file content\n            if (this.lastEditorContent !== content) {\n                this.monacoEditor.setValue(content);\n                this.lastEditorContent = content; // Update last content when switching tabs\n            }\n        });\n\n        const closeButton = document.createElement('span');\n        closeButton.textContent = '\\u274C';\n        closeButton.style.marginLeft = '10px';\n        closeButton.style.cursor = 'pointer';\n        closeButton.addEventListener('click', e => {\n            e.stopPropagation();\n            this.tabBar.removeChild(tab);\n            if (this.tabBar.childElementCount > 0) {\n                this.tabBar.children[0].click();\n            } else {\n                this.monacoEditor.setValue('');\n                this.currentFileHandle = null;\n                this.clearFileTreeHighlight();\n            }\n        });\n\n        tab.appendChild(closeButton);\n        this.tabBar.appendChild(tab);\n        tab.click(); // Automatically click the tab to activate it\n    }\n}\n```"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241226_122441201Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-26T12:33:12.692Z"
+}

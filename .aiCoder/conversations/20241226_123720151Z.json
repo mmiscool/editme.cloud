@@ -1,0 +1,41 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "I want to add the current file path of the file being edited to a textbox that is displayed at the beginning of the toolbar. \n\nI also want the file that is currently being edited to be highlighted in the file tree. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nimport * as monaco from 'monaco-editor';\n// Ensure this is set before creating the editor\nwindow.MonacoEnvironment = {\n    getWorkerUrl: function (workerId, label) {\n        return `data:text/javascript;charset=utf-8,${ encodeURIComponent(`\n            self.MonacoEnvironment = {\n                baseUrl: '${ location.origin }/monaco/'\n            };\n            importScripts('${ location.origin }/monaco/${ label }.worker.js');\n        `) }`;\n    }\n};\n\nexport class TabbedFileEditor {\n    constructor(container) {\n        this.container = container;\n        this.directoryHandle = null;\n        this.filePaths = new Map();\n        this.editorArea = null;\n        this.fileTreeContainer = null;\n        this.currentFileHandle = null;\n        this.filePathTextBox = null; // Initialize path text box\n        this.generateUI();\n        this.settingsDialog = new SettingsDialog();\n        this.suppressErrorLogging();\n    }\n    \n    generateUI() {\n        this.clearContainer();\n        this.setupContainerStyles();\n        this.createToolbar();\n        this.createMainContainer();\n    }\n\n    createToolbar() {\n        this.toolbar = document.createElement('div');\n        this.toolbar.style.display = 'flex';\n        this.toolbar.style.padding = '5px';\n        this.toolbar.style.height = '40px';\n        this.toolbar.style.alignItems = 'center';\n        this.container.appendChild(this.toolbar);\n        \n        this.createFilePathTextBox();\n        \n        this.addToolbarButton({\n            title: 'Open Folder',\n            toolTip: 'Open a folder to edit files',\n            callback: () => this.openFolder()\n        });\n        this.addToolbarButton({\n            title: 'Settings',\n            toolTip: 'Open settings dialog',\n            callback: () => this.settingsDialog.open()\n        });\n    }\n\n    createFilePathTextBox() {\n        this.filePathTextBox = document.createElement('input');\n        this.filePathTextBox.style.marginRight = '10px';\n        this.filePathTextBox.style.padding = '5px';\n        this.filePathTextBox.style.flexGrow = '1';\n        this.filePathTextBox.disabled = true; // Make textbox read-only\n        this.toolbar.appendChild(this.filePathTextBox);\n    }\n\n    async openFile(fileHandle) {\n        const file = await fileHandle.getFile();\n        const fileContent = await file.text();\n        this.currentFileHandle = fileHandle;\n\n        this.filePathTextBox.value = this.filePaths.get(fileHandle) || ''; // Set the current file path\n        this.monacoEditor.setValue(fileContent);\n        this.lastEditorContent = fileContent;\n\n        this.highlightActiveFileInTree(this.filePaths.get(fileHandle));\n    }\n\n    async highlightActiveFileInTree(filePath) {\n        this.clearFileTreeHighlight();\n        const fileElement = this.fileTreeContainer.querySelector(`[data-full-path=\"${filePath}\"]`);\n        if (fileElement) {\n            fileElement.style.backgroundColor = '#444444';\n            fileElement.style.color = '#ffffff';\n            let parentElement = fileElement.parentElement;\n            while (parentElement && parentElement !== this.fileTreeContainer) {\n                const parentFolder = parentElement.previousElementSibling;\n                if (parentFolder && parentFolder.dataset.expanded === 'false') {\n                    parentFolder.click();\n                }\n                parentElement = parentElement.parentElement;\n            }\n        }\n    }\n\n    clearFileTreeHighlight() {\n        const highlighted = this.fileTreeContainer.querySelector('[data-full-path][style*=\"background-color\"]');\n        if (highlighted) {\n            highlighted.style.backgroundColor = '';\n            highlighted.style.color = '';\n        }\n    }\n}\n```"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241226_123720151Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-26T12:38:59.798Z"
+}
