@@ -101,7 +101,6 @@ export class TabbedFileEditor {
     }
     async openFolder() {
         this.directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        // Request write permission immediately
         this.fileTreeContainer.innerHTML = '';
         const fileTreeTitle = document.createElement('h3');
         fileTreeTitle.textContent = 'File Tree';
@@ -109,7 +108,8 @@ export class TabbedFileEditor {
         fileTreeTitle.style.fontSize = '18px';
         fileTreeTitle.style.textAlign = 'center';
         this.fileTreeContainer.appendChild(fileTreeTitle);
-        //this.fileTreeContainer.insertBefore(openFolderButton, fileTreeTitle);
+        this.addNewFileButton();
+        // Add new file button here
         await this.listFiles(this.directoryHandle, this.fileTreeContainer);
     }
     async listFiles(directoryHandle, parentElement, currentPath = '', expandedPaths = new Set()) {
@@ -251,15 +251,41 @@ export class TabbedFileEditor {
         menu.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.2)';
         menu.style.cursor = 'pointer';
         menu.style.zIndex = '1000';
+        // Style for menu options
+        const optionStyle = {
+            padding: '5px',
+            margin: '5px 0'
+        };
+        const addHoverEffect = option => {
+            option.addEventListener('mouseover', () => {
+                option.style.backgroundColor = '#444444';
+            });
+            // Highlight background on hover
+            option.addEventListener('mouseout', () => {
+                option.style.backgroundColor = '';
+            });
+        };
+        // Reset background on mouse out
         // Add "Rename" option
         const renameOption = document.createElement('div');
         renameOption.textContent = 'Rename';
+        Object.assign(renameOption.style, optionStyle);
+        addHoverEffect(renameOption);
         renameOption.addEventListener('click', () => {
             this.renameFileOrFolder(handle, fileElement);
             menu.remove();
         });
-        // Close the menu
+        // Add "Delete" option
+        const deleteOption = document.createElement('div');
+        deleteOption.textContent = 'Delete';
+        Object.assign(deleteOption.style, optionStyle);
+        addHoverEffect(deleteOption);
+        deleteOption.addEventListener('click', async () => {
+            await this.deleteFileOrFolder(handle, fileElement);
+            menu.remove();
+        });
         menu.appendChild(renameOption);
+        menu.appendChild(deleteOption);
         document.body.appendChild(menu);
         // Close menu on outside click
         document.addEventListener('click', () => {
@@ -509,5 +535,63 @@ export class TabbedFileEditor {
     }
     async closeTab(tab) {
         this.stopFileWatcher();
+    }
+    addNewFileButton() {
+        this.addToolbarButton({
+            title: 'New File',
+            toolTip: 'Create a new file in the selected directory',
+            callback: () => this.createNewFile()
+        });
+    }
+    async createNewFile() {
+        const fileName = prompt('Enter file name (with extension):');
+        if (!fileName) {
+            return;
+        }
+        try {
+            const writable = await this.directoryHandle.getFileHandle(fileName, { create: true }).then(handle => handle.createWritable());
+            await writable.close();
+            console.log(`New file created: ${ fileName }`);
+            await this.refreshFileTree();
+        } // Refresh the file tree to show the new file
+        catch (error) {
+            console.error('Error creating new file:', error);
+        }
+    }
+    async deleteFileOrFolder(handle, fileElement) {
+        const confirmation = confirm(`Are you sure you want to delete ${ handle.name }?`);
+        if (!confirmation) {
+            return;
+        }
+        try {
+            const parentHandle = await this.resolveParentHandle(handle);
+            if (handle.kind === 'file') {
+                await parentHandle.removeEntry(handle.name);
+                this.removeTabIfOpen(handle);
+            } else if (handle.kind === 'directory') {
+                await parentHandle.removeEntry(handle.name, { recursive: true });
+            }
+            fileElement.remove();
+            console.log(`${ handle.kind === 'file' ? 'File' : 'Directory' } deleted successfully.`);
+            await this.refreshFileTree();
+        } catch (error) {
+            alert(`Failed to delete: ${ error.message }`);
+        }
+    }
+    removeTabIfOpen(fileHandle) {
+        const filePath = this.filePaths.get(fileHandle);
+        if (!filePath)
+            return;
+        const existingTab = Array.from(this.tabBar.children).find(tab => tab.dataset.filePath === filePath);
+        if (existingTab) {
+            this.tabBar.removeChild(existingTab);
+            if (this.tabBar.childElementCount > 0) {
+                this.tabBar.children[0].click();
+            } else {
+                this.monacoEditor.setValue('');
+                this.currentFileHandle = null;
+                this.clearFileTreeHighlight();
+            }
+        }
     }
 }
