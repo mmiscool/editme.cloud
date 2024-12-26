@@ -10,37 +10,49 @@ export class TabbedFileEditor {
         this.fileTreeContainer = null;
         this.currentFileHandle = null;
         this.fileTreeSnapshot = null;
-        // Stores a snapshot of the file tree
         this.generateUI();
     }
     generateUI() {
-        // Clear the container
+        this.clearContainer();
+        this.setupContainerStyles();
+        this.createToolbar();
+        this.createMainContainer();
+    }
+    clearContainer() {
         this.container.innerHTML = '';
+    }
+    setupContainerStyles() {
         this.container.style.margin = '0';
         this.container.style.fontFamily = 'Arial, sans-serif';
         this.container.style.height = '100vh';
         this.container.style.display = 'flex';
         this.container.style.flexDirection = 'column';
         this.container.style.color = '#ffffff';
-        // set font size
         this.container.style.fontSize = '12px';
-        // Create toolbar
+    }
+    createToolbar() {
         this.toolbar = document.createElement('div');
         this.toolbar.style.display = 'flex';
-        // deferent gray color for the toolbar
         this.toolbar.style.backgroundColor = '#2e2e2e';
         this.toolbar.style.padding = '5px';
         this.toolbar.style.height = '40px';
-        
-
         this.toolbar.style.alignItems = 'center';
         this.container.appendChild(this.toolbar);
-        // Create main container
+        this.addToolbarButton({
+            title: 'Open Folder',
+            toolTip: 'Open a folder to edit files',
+            callback: () => this.openFolder()
+        });
+    }
+    createMainContainer() {
         const mainContainer = document.createElement('div');
         mainContainer.style.display = 'flex';
         mainContainer.style.flex = '1';
         this.container.appendChild(mainContainer);
-        // Create file tree container
+        this.createFileTreeContainer(mainContainer);
+        this.createEditorContainer(mainContainer);
+    }
+    createFileTreeContainer(mainContainer) {
         this.fileTreeContainer = document.createElement('div');
         this.fileTreeContainer.style.width = '300px';
         this.fileTreeContainer.style.backgroundColor = '#2e2e2e';
@@ -49,49 +61,43 @@ export class TabbedFileEditor {
         this.fileTreeContainer.style.overflowX = 'scroll';
         this.fileTreeContainer.style.overflowY = 'auto';
         mainContainer.appendChild(this.fileTreeContainer);
-        // Create editor container
+    }
+    createEditorContainer(mainContainer) {
         const editorContainer = document.createElement('div');
         editorContainer.style.flex = '1';
         editorContainer.style.display = 'flex';
         editorContainer.style.flexDirection = 'column';
         editorContainer.style.backgroundColor = '#1e1e1e';
         mainContainer.appendChild(editorContainer);
-        // Create tab bar
+        this.createTabBar(editorContainer);
+        this.createEditorArea(editorContainer);
+    }
+    createTabBar(editorContainer) {
         this.tabBar = document.createElement('div');
         this.tabBar.style.display = 'flex';
         this.tabBar.style.backgroundColor = '#3e3e3e';
         this.tabBar.style.padding = '5px';
         this.tabBar.style.height = '30px';
         editorContainer.appendChild(this.tabBar);
-        // Create editor area
+    }
+    createEditorArea(editorContainer) {
         this.editorArea = document.createElement('div');
         this.editorArea.style.flex = '1';
         this.editorArea.style.width = '100%';
         this.editorArea.style.height = 'calc(100% - 40px)';
         editorContainer.appendChild(this.editorArea);
-        // Initialize Monaco Editor
+        this.initializeMonacoEditor();
+    }
+    initializeMonacoEditor() {
         this.monacoEditor = monaco.editor.create(this.editorArea, {
             value: '',
             language: 'javascript',
             theme: 'vs-dark',
             automaticLayout: false
         });
-        // Listen for content changes in Monaco Editor
         this.monacoEditor.onDidChangeModelContent(() => {
             this.autoSave();
         });
-        // Add "Open Folder" button to the toolbar
-        this.addToolbarButton({
-            title: 'Open Folder',
-            toolTip: 'Open a folder to edit files',
-            callback: () => this.openFolder()
-        });
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            this.resizeEditor();
-        });
-        // Adjust editor size initially
-        this.resizeEditor();
     }
     async openFolder() {
         this.directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
@@ -103,7 +109,6 @@ export class TabbedFileEditor {
         fileTreeTitle.style.fontSize = '18px';
         fileTreeTitle.style.textAlign = 'center';
         this.fileTreeContainer.appendChild(fileTreeTitle);
-
         //this.fileTreeContainer.insertBefore(openFolderButton, fileTreeTitle);
         await this.listFiles(this.directoryHandle, this.fileTreeContainer);
     }
@@ -186,7 +191,7 @@ export class TabbedFileEditor {
         });
         // Update Monaco Editor content
         const closeButton = document.createElement('span');
-        closeButton.textContent = '❌';
+        closeButton.textContent = '\u274C';
         closeButton.style.marginLeft = '10px';
         closeButton.style.cursor = 'pointer';
         closeButton.addEventListener('click', e => {
@@ -205,7 +210,6 @@ export class TabbedFileEditor {
         this.tabBar.appendChild(tab);
         tab.click();
     }
-    // Activate the new tab
     async autoSave() {
         if (!this.currentFileHandle)
             return;
