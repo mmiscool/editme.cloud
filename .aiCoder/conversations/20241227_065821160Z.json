@@ -1,0 +1,41 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "The file tree currently shows files in the local directory loaded from the local machine. \n\nI need for drag and drop events to be added to the files and directories shown in the file tree so that it can move files. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async listFiles(directoryHandle, parentElement, currentPath = '') {\n        for await (const [name, handle] of directoryHandle.entries()) {\n            const fullPath = `${currentPath}${name}`;\n            this.filePaths.set(handle, fullPath);\n            const fileElement = document.createElement('div');\n            fileElement.style.padding = '5px';\n            fileElement.style.cursor = 'pointer';\n            fileElement.dataset.fullPath = fullPath;\n            fileElement.dataset.kind = handle.kind;\n            fileElement.textContent = handle.kind === 'file' ? `📄 ${name}` : `📁 ${name}`;\n            fileElement.addEventListener('click', async e => {\n                e.stopPropagation();\n                if (handle.kind === 'file') {\n                    await this.openFile(handle);\n                } else if (handle.kind === 'directory') {\n                    await this.toggleDirectory(fileElement, handle, fullPath);\n                }\n            });\n            this.setupDragAndDropEvents(fileElement, handle);\n            parentElement.appendChild(fileElement);\n        }\n    }\n\n    setupDragAndDropEvents(fileElement, handle) {\n        fileElement.draggable = true;\n        fileElement.addEventListener('dragstart', e => {\n            e.stopPropagation();\n            const currentPath = this.filePaths.get(handle);\n            const dragData = {\n                path: currentPath,\n                name: handle.name,\n                kind: handle.kind\n            };\n            e.dataTransfer.setData('application/json', JSON.stringify(dragData));\n            e.dataTransfer.effectAllowed = 'move';\n        });\n        fileElement.addEventListener('dragover', e => {\n            e.preventDefault();\n            e.stopPropagation();\n            e.dataTransfer.dropEffect = 'move';\n        });\n        fileElement.addEventListener('drop', async e => {\n            e.preventDefault();\n            e.stopPropagation();\n            try {\n                const dragDataStr = e.dataTransfer.getData('application/json');\n                const dragData = JSON.parse(dragDataStr);\n                if (!dragData || !dragData.path) {\n                    throw new Error('Invalid drag data: source path missing');\n                }\n                const targetDirectory = handle.kind === 'directory' ? handle : await this.getParentDirectoryHandle(handle);\n                if (!targetDirectory) {\n                    throw new Error('Could not resolve target directory');\n                }\n                await this.moveFile(dragData, targetDirectory);\n                await this.refreshFileTree();\n            } catch (error) {\n                console.error('Drop error:', error);\n                alert(`Failed to move file: ${error.message}`);\n            }\n        });\n    }\n\n    async moveFile(draggedData, targetDirHandle) {\n        try {\n            if (!draggedData || !targetDirHandle) {\n                throw new Error('Source or target directory handle is missing');\n            }\n            const sourceHandle = await this.resolvePathToHandle(draggedData.path);\n            if (!sourceHandle) {\n                throw new Error('Could not resolve source handle');\n            }\n            if (draggedData.kind !== 'file' && draggedData.kind !== 'directory') {\n                throw new Error('Invalid item type for move operation');\n            }\n            if (draggedData.kind === 'file') {\n                await this.moveFileToTarget(sourceHandle, targetDirHandle);\n            } else if (draggedData.kind === 'directory') {\n                await this.moveDirectoryToTarget(sourceHandle, targetDirHandle);\n            }\n            await this.refreshFileTree();\n        } catch (error) {\n            console.error('Error moving item:', error);\n            alert(`Failed to move: ${error.message}`);\n        }\n    }\n    \n    // ... other existing methods\n}\n```"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241227_065821160Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-27T06:59:54.190Z"
+}

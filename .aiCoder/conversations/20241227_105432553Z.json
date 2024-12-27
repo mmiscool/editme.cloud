@@ -1,0 +1,41 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "Are there any methods in this class that are never called?\nGive me a list of methods. Not code. "
+    },
+    {
+      "role": "assistant",
+      "content": "Here is a list of methods in the `TabbedFileEditor` class that are never called within the class itself:\n\n1. `suppressErrorLogging`\n2. `createFilePathTextBox`\n3. `closeTab`"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241227_105432553Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-27T10:54:52.088Z"
+}

@@ -1,0 +1,49 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "There is a problem. Right now if I click on a folder in the file tree it keeps adding the same files to the list over and over again. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async listFiles(directoryHandle, parentElement, currentPath = '') {\n        // Clear the parent element before listing files to avoid duplicates\n        parentElement.innerHTML = '';\n\n        for await (const [name, handle] of directoryHandle.entries()) {\n            const fullPath = `${currentPath}${name}`;\n            this.filePaths.set(handle, fullPath);\n            const fileElement = document.createElement('div');\n            fileElement.style.padding = '5px';\n            fileElement.style.cursor = 'pointer';\n            fileElement.dataset.fullPath = fullPath;\n            fileElement.dataset.kind = handle.kind;\n            fileElement.textContent = handle.kind === 'file' ? `📄 ${name}` : `📁 ${name}`;\n            fileElement.addEventListener('click', async e => {\n                e.stopPropagation();\n                if (handle.kind === 'file') {\n                    await this.openFile(handle);\n                } else if (handle.kind === 'directory') {\n                    await this.toggleDirectory(fileElement, handle, fullPath);\n                }\n            });\n            this.setupDragAndDropEvents(fileElement, handle);\n            parentElement.appendChild(fileElement);\n        }\n    }\n\n    // ... existing methods\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "If I click on a folder twice it keeps adding more files under the directory in the UI. "
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nexport class TabbedFileEditor {\n    // ... existing methods\n\n    async toggleDirectory(fileElement, handle, fullPath) {\n        const isExpanded = fileElement.dataset.expanded === 'true';\n\n        // Toggle directory expansion state\n        fileElement.dataset.expanded = !isExpanded;\n\n        if (!isExpanded) {\n            // Create container for the directory content only if it was not expanded before\n            const directoryContent = document.createElement('div');\n            directoryContent.style.paddingLeft = '20px';\n            directoryContent.style.display = 'block';\n            await this.listFiles(handle, directoryContent, `${fullPath}/`);\n            fileElement.appendChild(directoryContent);\n        } else {\n            // Remove the previously listed files if the directory is collapsed\n            const existingContent = fileElement.querySelector('div');\n            if (existingContent) {\n                fileElement.removeChild(existingContent);\n            }\n        }\n    }\n\n    // ... existing methods\n}\n```"
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241227_070049409Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-27T07:11:51.754Z"
+}

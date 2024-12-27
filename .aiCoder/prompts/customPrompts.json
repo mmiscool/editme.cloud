@@ -1,6 +1,7 @@
 [
-    "Find the first class method that is incomplete or a stub. Implement it.",
-    "Generate the classes and stub methods required to implement the plan. ",
-    "Look for class methods that are referenced but not implemented. Add stubs for these missing methods. ",
-    "Implement the first todo comment you find. "
-  ]
+  "Find the first class method that is incomplete or a stub. Implement it.",
+  "Generate the classes and stub methods required to implement the plan. ",
+  "Look for class methods that are referenced but not implemented. Add stubs for these missing methods. ",
+  "Implement the first todo comment you find. ",
+  "Are there any methods in this class that are never called?\nGive me a list of methods. Not code. "
+]

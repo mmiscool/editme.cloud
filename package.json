@@ -19,9 +19,25 @@
   "description": "A tool to make AI coding tasks easy",
   "type": "module",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.33.1",
     "@parcel/config-default": "^2.13.2",
     "@parcel/core": "^2.13.2",
-    "parcel": "^2.13.2",
-    "monaco-editor": "^0.52.2"
+    "groq-sdk": "^0.9.1",
+    "monaco-editor": "^0.52.2",
+    "ollama": "^0.5.11",
+    "openai": "^4.77.0",
+    "parcel": "^2.13.2"
+  },
+  "devDependencies": {
+    "@parcel/resolver-glob": "^2.13.3",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
+    "events": "^3.3.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10",
+    "stream-browserify": "^3.0.0",
+    "string_decoder": "^1.3.0",
+    "vm-browserify": "^1.1.2"
   }
 }

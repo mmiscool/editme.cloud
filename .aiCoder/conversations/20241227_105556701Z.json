@@ -1,0 +1,41 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "Are there any methods in this class that are never called?\nGive me a list of methods. Not code. "
+    },
+    {
+      "role": "assistant",
+      "content": "The following methods in the `TabbedFileEditor` class are never called:\n\n1. `stopFileWatcher`\n2. `getParentDirectoryHandle`\n3. `clearFileTreeHighlight`\n4. `extractFileName`\n5. `toggleDirectory`\n6. `removeTabIfOpen` \n\nThese methods are defined but not invoked anywhere in the provided code."
+    }
+  ],
+  "title": "Are there any methods in this class that are never called?\nGive me a list of methods. Not code. ",
+  "id": "20241227_105556701Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-27T10:55:58.520Z"
+}

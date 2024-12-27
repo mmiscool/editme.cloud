@@ -3,12 +3,12 @@ import * as monaco from 'monaco-editor';
 // Ensure this is set before creating the editor
 window.MonacoEnvironment = {
     getWorkerUrl: function (workerId, label) {
-        return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+        return `data:text/javascript;charset=utf-8,${ encodeURIComponent(`
             self.MonacoEnvironment = {
-                baseUrl: '${location.origin}/monaco/'
+                baseUrl: '${ location.origin }/monaco/'
             };
-            importScripts('${location.origin}/monaco/${label}.worker.js');
-        `)}`;
+            importScripts('${ location.origin }/monaco/${ label }.worker.js');
+        `) }`;
     }
 };
 export class TabbedFileEditor {
@@ -27,6 +27,7 @@ export class TabbedFileEditor {
         this.settingsDialog = new SettingsDialog();
         this.suppressErrorLogging();
         this.startAutoRefresh();
+        this.addRefreshButton();
     }
     generateUI() {
         this.clearContainer();
@@ -54,12 +55,12 @@ export class TabbedFileEditor {
         this.container.appendChild(this.toolbar);
         this.createFilePathTextBox();
         this.addToolbarButton({
-            title: 'Open Folder',
+            title: 'Open 📂',
             toolTip: 'Open a folder to edit files',
             callback: () => this.openFolder()
         });
         this.addToolbarButton({
-            title: 'Settings',
+            title: '⚙️',
             toolTip: 'Open settings dialog',
             callback: () => this.settingsDialog.open()
         });
@@ -87,13 +88,6 @@ export class TabbedFileEditor {
         editorContainer.style.flexDirection = 'column';
         mainContainer.appendChild(editorContainer);
         this.createEditorArea(editorContainer);
-    }
-    createTabBar(editorContainer) {
-        this.tabBar = document.createElement('div');
-        this.tabBar.style.display = 'flex';
-        this.tabBar.style.padding = '5px';
-        this.tabBar.style.height = '30px';
-        editorContainer.appendChild(this.tabBar);
     }
     createEditorArea(editorContainer) {
         this.editorArea = document.createElement('div');
@@ -124,15 +118,16 @@ export class TabbedFileEditor {
         await this.listFiles(this.directoryHandle, this.fileTreeContainer);
     }
     async listFiles(directoryHandle, parentElement, currentPath = '') {
+        parentElement.innerHTML = '';
         for await (const [name, handle] of directoryHandle.entries()) {
-            const fullPath = `${currentPath}${name}`;
+            const fullPath = `${ currentPath }${ name }`;
             this.filePaths.set(handle, fullPath);
             const fileElement = document.createElement('div');
             fileElement.style.padding = '5px';
             fileElement.style.cursor = 'pointer';
             fileElement.dataset.fullPath = fullPath;
             fileElement.dataset.kind = handle.kind;
-            fileElement.textContent = handle.kind === 'file' ? `📄 ${name}` : `📁 ${name}`;
+            fileElement.textContent = handle.kind === 'file' ? `📄 ${ name }` : `📁 ${ name }`;
             fileElement.addEventListener('click', async e => {
                 e.stopPropagation();
                 if (handle.kind === 'file') {
@@ -141,6 +136,9 @@ export class TabbedFileEditor {
                     await this.toggleDirectory(fileElement, handle, fullPath);
                 }
             });
+            this.setupDragAndDropEvents(fileElement, handle);
+            this.setupContextMenu(fileElement, handle);
+            // Added context menu setup here
             parentElement.appendChild(fileElement);
         }
     }
@@ -155,66 +153,17 @@ export class TabbedFileEditor {
         // Initialize content tracker
         this.highlightActiveFileInTree(this.filePaths.get(fileHandle));
     }
-    async createTab(fileName, fileHandle, content) {
-        const filePath = await this.getFilePath(fileHandle);
-        const existingTab = Array.from(this.tabBar.children).find(tab => tab.dataset.filePath === filePath);
-        if (existingTab) {
-            existingTab.click();
-            return;
-        }
-        const tab = document.createElement('div');
-        tab.textContent = fileName;
-        tab.dataset.filePath = filePath;
-        tab.style.padding = '2px';
-        tab.style.marginRight = '5px';
-        tab.style.height = '30px';
-        tab.style.border = '2px solid black';
-        tab.style.cursor = 'pointer';
-        tab.style.transition = 'filter 0.3s';
-        tab.style.backgroundColor = 'gray';
-        tab.addEventListener('click', async () => {
-            this.resetTabStyles();
-            tab.style.filter = 'invert(100%)';
-            this.currentFileHandle = fileHandle;
-            this.highlightActiveFileInTree(filePath);
-            // Set editor value to current file content
-            if (this.lastEditorContent !== content) {
-                this.monacoEditor.setValue(content);
-                this.lastEditorContent = content;
-            }
-        });
-        // Update last content when switching tabs
-        const closeButton = document.createElement('span');
-        closeButton.textContent = '\u274C';
-        closeButton.style.marginLeft = '10px';
-        closeButton.style.cursor = 'pointer';
-        closeButton.addEventListener('click', e => {
-            e.stopPropagation();
-            this.tabBar.removeChild(tab);
-            if (this.tabBar.childElementCount > 0) {
-                this.tabBar.children[0].click();
-            } else {
-                this.monacoEditor.setValue('');
-                this.currentFileHandle = null;
-                this.clearFileTreeHighlight();
-            }
-        });
-        tab.appendChild(closeButton);
-        this.tabBar.appendChild(tab);
-        tab.click();
-    }
     async autoSave() {
-        if (!this.currentFileHandle) return;
-
+        if (!this.currentFileHandle)
+            return;
         const content = await this.monacoEditor.getValue();
-        if (this.watchingFileContent === content) return await this.checkForFileUpdates(this.currentFileHandle);
+        if (this.watchingFileContent === content)
+            return await this.checkForFileUpdates(this.currentFileHandle);
         const writable = await this.currentFileHandle.createWritable();
-
         this.watchingFileContent = content;
         await writable.write(content);
         await writable.close();
         return console.log('Auto-saved successfully.');
-
     }
     async getFilePath(fileHandle) {
         const path = this.filePaths.get(fileHandle);
@@ -232,12 +181,11 @@ export class TabbedFileEditor {
         const menu = document.createElement('div');
         menu.className = 'context-menu';
         menu.style.position = 'absolute';
-        menu.style.top = `${event.clientY}px`;
-        menu.style.left = `${event.clientX}px`;
+        menu.style.top = `${ event.clientY }px`;
+        menu.style.left = `${ event.clientX }px`;
         menu.style.padding = '10px';
         menu.style.borderRadius = '5px';
         menu.style.backgroundColor = '#444';
-        // Background color for the menu
         menu.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.2)';
         menu.style.cursor = 'pointer';
         menu.style.zIndex = '1000';
@@ -247,7 +195,6 @@ export class TabbedFileEditor {
             option.style.padding = '5px';
             option.style.cursor = 'pointer';
             option.style.color = '#ffffff';
-            // Text color
             option.style.transition = 'background-color 0.3s';
             option.addEventListener('click', () => {
                 callback();
@@ -256,11 +203,9 @@ export class TabbedFileEditor {
             option.addEventListener('mouseover', () => {
                 option.style.backgroundColor = '#555';
             });
-            // Highlight color on hover
             option.addEventListener('mouseout', () => {
                 option.style.backgroundColor = '';
             });
-            // Reset color
             return option;
         };
         const renameOption = createMenuOption('Rename', () => {
@@ -294,22 +239,22 @@ export class TabbedFileEditor {
                 await writable.close();
                 // Remove the original file
                 await parentHandle.removeEntry(handle.name);
-                fileElement.textContent = `📄 ${newName}`;
-                this.updateFilePath(handle, `${parentHandle.path}/${newName}`);
+                fileElement.textContent = `📄 ${ newName }`;
+                this.updateFilePath(handle, `${ parentHandle.path }/${ newName }`);
             } else // Update filePaths map
-                if (handle.kind === 'directory') {
-                    // Create a new directory with the new name
-                    const newDirHandle = await parentHandle.getDirectoryHandle(newName, { create: true });
-                    // Move all contents to the new directory
-                    await this.copyDirectory(handle, newDirHandle);
-                    // Remove the original directory
-                    await parentHandle.removeEntry(handle.name, { recursive: true });
-                    fileElement.textContent = `📁 ${newName}`;
-                    this.updateFilePath(handle, `${parentHandle.path}/${newName}`);
-                }
+            if (handle.kind === 'directory') {
+                // Create a new directory with the new name
+                const newDirHandle = await parentHandle.getDirectoryHandle(newName, { create: true });
+                // Move all contents to the new directory
+                await this.copyDirectory(handle, newDirHandle);
+                // Remove the original directory
+                await parentHandle.removeEntry(handle.name, { recursive: true });
+                fileElement.textContent = `📁 ${ newName }`;
+                this.updateFilePath(handle, `${ parentHandle.path }/${ newName }`);
+            }
         } // Update filePaths map
         catch (error) {
-            alert(`Failed to rename file or folder: ${error.message}`);
+            alert(`Failed to rename file or folder: ${ error.message }`);
         }
     }
     async copyDirectory(sourceDirHandle, targetDirHandle) {
@@ -374,7 +319,7 @@ export class TabbedFileEditor {
             try {
                 currentHandle = await currentHandle.getDirectoryHandle(part, { create: false });
             } catch (error) {
-                console.error(`Could not resolve the directory handle for part: ${part}`);
+                console.error(`Could not resolve the directory handle for part: ${ part }`);
                 return null;
             }
         }
@@ -399,7 +344,7 @@ export class TabbedFileEditor {
     }
     async highlightActiveFileInTree(filePath) {
         this.clearFileTreeHighlight();
-        const fileElement = this.fileTreeContainer.querySelector(`[data-full-path="${filePath}"]`);
+        const fileElement = this.fileTreeContainer.querySelector(`[data-full-path="${ filePath }"]`);
         if (fileElement) {
             fileElement.style.backgroundColor = '#444444';
             fileElement.style.color = '#ffffff';
@@ -420,7 +365,7 @@ export class TabbedFileEditor {
             highlighted.style.color = '';
         }
     }
-    addToolbarButton({ title, toolTip, callback }) {
+    addToolbarButton({title, toolTip, callback}) {
         const button = document.createElement('button');
         button.textContent = title;
         button.title = toolTip;
@@ -445,24 +390,9 @@ export class TabbedFileEditor {
             this.fileWatchInterval = null;
         }
     }
-    async closeTab(tab) {
-        // Prevent auto-save on tab close
-        this.stopFileWatcher();
-        // Remove the tab from the tab bar
-        this.tabBar.removeChild(tab);
-        // Check if any tab remains open
-        if (this.tabBar.childElementCount > 0) {
-            this.tabBar.children[0].click();
-        } else {
-            // Clear Monaco Editor content only if no other tabs are open
-            this.monacoEditor.setValue('');
-            this.currentFileHandle = null;
-            this.clearFileTreeHighlight();
-        }
-    }
     addNewFileButton() {
         this.addToolbarButton({
-            title: 'New File',
+            title: '+ 🗎',
             toolTip: 'Create a new file in the selected directory',
             callback: () => this.createNewFile()
         });
@@ -473,14 +403,14 @@ export class TabbedFileEditor {
             return;
         try {
             await this.directoryHandle.getFileHandle(fileName, { create: true });
-            console.log(`New file created: ${fileName}`);
+            console.log(`New file created: ${ fileName }`);
             await this.refreshFileTree();
         } catch (error) {
             console.error('Error creating new file:', error);
         }
     }
     async deleteFileOrFolder(handle, fileElement) {
-        const confirmation = confirm(`Are you sure you want to delete ${handle.name}?`);
+        const confirmation = confirm(`Are you sure you want to delete ${ handle.name }?`);
         if (!confirmation) {
             return;
         }
@@ -493,10 +423,10 @@ export class TabbedFileEditor {
                 await parentHandle.removeEntry(handle.name, { recursive: true });
             }
             fileElement.remove();
-            console.log(`${handle.kind === 'file' ? 'File' : 'Directory'} deleted successfully.`);
+            console.log(`${ handle.kind === 'file' ? 'File' : 'Directory' } deleted successfully.`);
             await this.refreshFileTree();
         } catch (error) {
-            alert(`Failed to delete: ${error.message}`);
+            alert(`Failed to delete: ${ error.message }`);
         }
     }
     removeTabIfOpen(fileHandle) {
@@ -514,10 +444,6 @@ export class TabbedFileEditor {
                 this.clearFileTreeHighlight();
             }
         }
-    }
-    extractFileName(path) {
-        const parts = path.split('/');
-        return parts[parts.length - 1];
     }
     async resolvePathToHandle(path) {
         try {
@@ -546,7 +472,6 @@ export class TabbedFileEditor {
             return null;
         }
     }
-
     async findParentInDirectory(dirHandle, targetHandle) {
         try {
             for await (const entry of dirHandle.values()) {
@@ -578,26 +503,9 @@ export class TabbedFileEditor {
             await sourceParent.removeEntry(sourceHandle.name);
         }
         // Update file paths
-        const newPath = `${this.filePaths.get(targetDirHandle)}/${sourceHandle.name}`;
+        const newPath = `${ this.filePaths.get(targetDirHandle) }/${ sourceHandle.name }`;
         this.filePaths.delete(sourceHandle);
         this.filePaths.set(newHandle, newPath);
-    }
-    async isSubdirectory(parentDir, potentialSubDir) {
-        try {
-            let current = potentialSubDir;
-            while (current !== this.directoryHandle) {
-                if (current === parentDir) {
-                    return true;
-                }
-                current = await this.getParentDirectoryHandle(current);
-                if (!current)
-                    break;
-            }
-            return false;
-        } catch (error) {
-            console.error('Error checking subdirectory:', error);
-            return false;
-        }
     }
     async moveFile(draggedData, targetDirHandle) {
         try {
@@ -619,7 +527,7 @@ export class TabbedFileEditor {
             await this.refreshFileTree();
         } catch (error) {
             console.error('Error moving item:', error);
-            alert(`Failed to move: ${error.message}`);
+            alert(`Failed to move: ${ error.message }`);
         }
     }
     async moveFileToTarget(fileHandle, targetDirHandle) {
@@ -633,12 +541,12 @@ export class TabbedFileEditor {
         if (userConfirmation) {
             const sourceParentHandle = await this.getParentDirectoryHandle(fileHandle);
             if (sourceParentHandle) {
-                const fileElement = this.fileTreeContainer.querySelector(`[data-full-path="${this.filePaths.get(fileHandle)}"]`);
+                const fileElement = this.fileTreeContainer.querySelector(`[data-full-path="${ this.filePaths.get(fileHandle) }"]`);
                 await this.deleteFileOrFolder(fileHandle, fileElement);
             }
         }
         // Use the delete method
-        this.updateFilePath(newHandle, `${this.filePaths.get(targetDirHandle)}/${fileHandle.name}`);
+        this.updateFilePath(newHandle, `${ this.filePaths.get(targetDirHandle) }/${ fileHandle.name }`);
     }
     async moveDirectoryToTarget(dirHandle, targetDirHandle) {
         const newDirHandle = await targetDirHandle.getDirectoryHandle(dirHandle.name, { create: true });
@@ -653,7 +561,7 @@ export class TabbedFileEditor {
         if (sourceParentHandle) {
             await sourceParentHandle.removeEntry(dirHandle.name, { recursive: true });
         }
-        this.updateFilePath(newDirHandle, `${this.filePaths.get(targetDirHandle)}/${dirHandle.name}`);
+        this.updateFilePath(newDirHandle, `${ this.filePaths.get(targetDirHandle) }/${ dirHandle.name }`);
         this.filePaths.delete(dirHandle);
     }
     setupDragAndDropEvents(fileElement, handle) {
@@ -669,7 +577,6 @@ export class TabbedFileEditor {
             e.dataTransfer.setData('application/json', JSON.stringify(dragData));
             e.dataTransfer.effectAllowed = 'move';
         });
-        // Enable drag-and-drop for directories as well
         fileElement.addEventListener('dragover', e => {
             e.preventDefault();
             e.stopPropagation();
@@ -684,19 +591,23 @@ export class TabbedFileEditor {
                 if (!dragData || !dragData.path) {
                     throw new Error('Invalid drag data: source path missing');
                 }
-                // Determine the proper target directory
                 const targetDirectory = handle.kind === 'directory' ? handle : await this.getParentDirectoryHandle(handle);
+                if (!targetDirectory) {
+                    throw new Error('Could not resolve target directory');
+                }
                 await this.moveFile(dragData, targetDirectory);
                 await this.refreshFileTree();
             } catch (error) {
                 console.error('Drop error:', error);
-                alert(`Failed to move file: ${error.message}`);
+                alert(`Failed to move file: ${ error.message }`);
             }
         });
     }
     setupContextMenu(fileElement, handle) {
         fileElement.addEventListener('contextmenu', event => {
             event.preventDefault();
+            // prevent other events from firing
+            event.stopPropagation();
             this.showContextMenu(event, handle, fileElement);
         });
     }
@@ -724,12 +635,6 @@ export class TabbedFileEditor {
             originalError.apply(console, args);
         };
     }
-    resetTabStyles() {
-        Array.from(this.tabBar.children).forEach(t => {
-            t.style.border = '2px solid transparent';
-            t.style.filter = '';
-        });
-    }
 
     stopAutoRefresh() {
         if (this.fileWatchInterval) {
@@ -738,11 +643,23 @@ export class TabbedFileEditor {
         }
     }
     async toggleDirectory(fileElement, handle, fullPath) {
-        const directoryContent = document.createElement('div');
-        directoryContent.style.paddingLeft = '20px';
-        directoryContent.style.display = 'block';
-        await this.listFiles(handle, directoryContent, `${fullPath}/`);
-        fileElement.appendChild(directoryContent);
+        const isExpanded = fileElement.dataset.expanded === 'true';
+        // Toggle directory expansion state
+        fileElement.dataset.expanded = !isExpanded;
+        if (!isExpanded) {
+            // Create container for the directory content only if it was not expanded before
+            const directoryContent = document.createElement('div');
+            directoryContent.style.paddingLeft = '20px';
+            directoryContent.style.display = 'block';
+            await this.listFiles(handle, directoryContent, `${ fullPath }/`);
+            fileElement.appendChild(directoryContent);
+        } else {
+            // Remove the previously listed files if the directory is collapsed
+            const existingContent = fileElement.querySelector('div');
+            if (existingContent) {
+                fileElement.removeChild(existingContent);
+            }
+        }
     }
     createFilePathTextBox() {
         this.filePathTextBox = document.createElement('input');
@@ -752,6 +669,13 @@ export class TabbedFileEditor {
         this.filePathTextBox.disabled = true;
         // Make textbox read-only
         this.toolbar.appendChild(this.filePathTextBox);
+    }
+    addRefreshButton() {
+        this.addToolbarButton({
+            title: '🔄',
+            toolTip: 'Refresh the file tree',
+            callback: () => this.refreshFileTree()
+        });
     }
 }
 export class SettingsDialog {
@@ -791,11 +715,11 @@ export class SettingsDialog {
 // Ensure this is set before creating the editor
 window.MonacoEnvironment = {
     getWorkerUrl: function (workerId, label) {
-        return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+        return `data:text/javascript;charset=utf-8,${ encodeURIComponent(`
             self.MonacoEnvironment = {
-                baseUrl: '${location.origin}/monaco/'
+                baseUrl: '${ location.origin }/monaco/'
             };
-            importScripts('${location.origin}/monaco/${label}.worker.js');
-        `)}`;
+            importScripts('${ location.origin }/monaco/${ label }.worker.js');
+        `) }`;
     }
 };
