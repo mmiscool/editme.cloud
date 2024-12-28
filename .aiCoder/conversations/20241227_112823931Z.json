@@ -1,0 +1,33 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    }
+  ],
+  "title": "Chat about ./src/TabbedFileEditor.js",
+  "id": "20241227_112823931Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-27T11:28:23.942Z"
+}
