@@ -1,5 +1,6 @@
 
 import * as monaco from 'monaco-editor';
+import { codeManipulator } from './intelligentMerge.js';
 // Ensure this is set before creating the editor
 window.MonacoEnvironment = {
     getWorkerUrl: function (workerId, label) {
@@ -11,6 +12,10 @@ window.MonacoEnvironment = {
         `) }`;
     }
 };
+let editor;
+export function setup() {
+    editor = new TabbedFileEditor(document.body);
+}
 export class TabbedFileEditor {
     constructor(container) {
         this.container = container;
@@ -24,9 +29,9 @@ export class TabbedFileEditor {
         this.watchingFileContent = '';
         this.generateUI();
         this.settingsDialog = new SettingsDialog();
+        this.inteligentMergeDialog = new inteligentMergeDialog();
         this.suppressErrorLogging();
         this.startAutoRefresh();
-        this.addRefreshButton();
     }
     generateUI() {
         this.clearContainer();
@@ -54,7 +59,6 @@ export class TabbedFileEditor {
         this.toolbar.style.height = '40px';
         this.toolbar.style.alignItems = 'center';
         this.container.appendChild(this.toolbar);
-        this.createFilePathTextBox();
         this.addToolbarButton({
             title: 'Open 📂',
             toolTip: 'Open a folder to edit files',
@@ -70,6 +74,23 @@ export class TabbedFileEditor {
             toolTip: 'Create a new file in the selected directory',
             callback: () => this.createNewFile()
         });
+        this.addToolbarButton({
+            title: '↹',
+            toolTip: 'Intelligent Merge',
+            callback: () => this.inteligentMergeDialog.open()
+        });
+        this.addToolbarButton({
+            title: '🔄',
+            toolTip: 'Refresh the file tree',
+            callback: () => this.refreshFileTree()
+        });
+        this.addToolbarButton({
+            title: 'ℹ️',
+            // About icon
+            toolTip: 'About',
+            callback: () => this.openAboutPage()
+        });
+        this.createFilePathTextBox();
     }
     createMainContainer() {
         const mainContainer = document.createElement('div');
@@ -104,12 +125,15 @@ export class TabbedFileEditor {
         this.initializeMonacoEditor();
     }
     initializeMonacoEditor() {
-        this.monacoEditor = monaco.editor.create(this.editorArea, {
-            value: '',
-            language: 'javascript',
-            theme: 'vs-dark',
-            automaticLayout: true
-        });
+        try {
+            this.monacoEditor = monaco.editor.create(this.editorArea, {
+                value: '',
+                language: 'javascript',
+                theme: 'vs-dark',
+                automaticLayout: true
+            });
+        } catch (error) {
+        }
     }
     async openFolder() {
         this.directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
@@ -227,7 +251,7 @@ export class TabbedFileEditor {
         }, { once: true });
     }
     async renameFileOrFolder(handle, fileElement) {
-        const newName = prompt('Enter new name:', handle.name);
+        const newName = await prompt('Enter new name:', handle.name);
         if (!newName || newName === handle.name) {
             return;
         }
@@ -250,7 +274,7 @@ export class TabbedFileEditor {
                 this.updateFilePath(handle, `${ parentHandle.path }/${ newName }`);
             }
         } catch (error) {
-            alert(`Failed to rename file or folder: ${ error.message }`);
+            await alert(`Failed to rename file or folder: ${ error.message }`);
         }
     }
     async copyDirectory(sourceDirHandle, targetDirHandle) {
@@ -367,9 +391,7 @@ export class TabbedFileEditor {
         button.title = toolTip;
         button.style.marginRight = '10px';
         button.style.padding = '5px 10px';
-        button.style.backgroundColor = '#444';
-        button.style.color = '#fff';
-        button.style.border = 'none';
+        button.style.height = '100%';
         button.style.cursor = 'pointer';
         button.addEventListener('click', callback);
         this.toolbar.appendChild(button);
@@ -387,7 +409,7 @@ export class TabbedFileEditor {
         }
     }
     async createNewFile() {
-        const fileName = prompt('Enter file name (with extension):');
+        const fileName = await prompt('Enter file name (with extension):');
         if (!fileName)
             return;
         try {
@@ -399,7 +421,7 @@ export class TabbedFileEditor {
         }
     }
     async deleteFileOrFolder(handle, fileElement) {
-        const confirmation = confirm(`Are you sure you want to delete ${ handle.name }?`);
+        const confirmation = await confirm(`Are you sure you want to delete ${ handle.name }?`);
         if (!confirmation) {
             return;
         }
@@ -407,31 +429,14 @@ export class TabbedFileEditor {
             const parentHandle = await this.resolveParentHandle(handle);
             if (handle.kind === 'file') {
                 await parentHandle.removeEntry(handle.name);
-                this.removeTabIfOpen(handle);
             } else if (handle.kind === 'directory') {
                 await parentHandle.removeEntry(handle.name, { recursive: true });
             }
-            fileElement.remove();
             console.log(`${ handle.kind === 'file' ? 'File' : 'Directory' } deleted successfully.`);
             await this.refreshFileTree();
         } catch (error) {
-            alert(`Failed to delete: ${ error.message }`);
-        }
-    }
-    removeTabIfOpen(fileHandle) {
-        const filePath = this.filePaths.get(fileHandle);
-        if (!filePath)
-            return;
-        const existingTab = Array.from(this.tabBar.children).find(tab => tab.dataset.filePath === filePath);
-        if (existingTab) {
-            this.tabBar.removeChild(existingTab);
-            if (this.tabBar.childElementCount > 0) {
-                this.tabBar.children[0].click();
-            } else {
-                this.monacoEditor.setValue('');
-                this.currentFileHandle = null;
-                this.clearFileTreeHighlight();
-            }
+            console.error('Error deleting file or folder:', error);
+            await alert(`Failed to delete: ${ error.message }`);
         }
     }
     async resolvePathToHandle(path) {
@@ -516,7 +521,7 @@ export class TabbedFileEditor {
             await this.refreshFileTree();
         } catch (error) {
             console.error('Error moving item:', error);
-            alert(`Failed to move: ${ error.message }`);
+            await alert(`Failed to move: ${ error.message }`);
         }
     }
     async moveFileToTarget(fileHandle, targetDirHandle) {
@@ -526,7 +531,7 @@ export class TabbedFileEditor {
         const writable = await newHandle.createWritable();
         await writable.write(content);
         await writable.close();
-        const userConfirmation = confirm('Do you want to move the file? (Press OK to move, Cancel to copy)');
+        const userConfirmation = await confirm('Do you want to move the file? (Press OK to move, Cancel to copy)');
         if (userConfirmation) {
             const sourceParentHandle = await this.getParentDirectoryHandle(fileHandle);
             if (sourceParentHandle) {
@@ -621,9 +626,9 @@ export class TabbedFileEditor {
         const originalError = console.error;
         console.error = (...args) => {
             console.log(args);
-            originalError.apply(console, args);
         };
     }
+    //originalError.apply(console, args);
     stopAutoRefresh() {
         if (this.fileWatchInterval) {
             clearInterval(this.fileWatchInterval);
@@ -654,16 +659,29 @@ export class TabbedFileEditor {
         this.filePathTextBox.style.marginRight = '10px';
         this.filePathTextBox.style.padding = '5px';
         this.filePathTextBox.style.flexGrow = '1';
+        this.filePathTextBox.style.height = '100%';
         this.filePathTextBox.disabled = true;
-        // Make textbox read-only
         this.toolbar.appendChild(this.filePathTextBox);
     }
-    addRefreshButton() {
-        this.addToolbarButton({
-            title: '🔄',
-            toolTip: 'Refresh the file tree',
-            callback: () => this.refreshFileTree()
-        });
+    getEditorContents() {
+        try {
+            return this.monacoEditor.getValue();
+        } catch (error) {
+            console.error('Failed to get editor contents:', error);
+            return '';
+        }
+    }
+    async setEditorContents(content) {
+        try {
+            this.monacoEditor.setValue(content);
+            await this.autoSave();
+        } // Trigger auto-save after setting the contents
+        catch (error) {
+            console.error('Failed to set editor contents:', error);
+        }
+    }
+    openAboutPage() {
+        window.open('https://github.com/mmiscool/editme.cloud', '_blank');
     }
 }
 export class SettingsDialog {
@@ -700,14 +718,68 @@ export class SettingsDialog {
         document.body.appendChild(this.dialog);
     }
 }
-// Ensure this is set before creating the editor
-window.MonacoEnvironment = {
-    getWorkerUrl: function (workerId, label) {
-        return `data:text/javascript;charset=utf-8,${ encodeURIComponent(`
-            self.MonacoEnvironment = {
-                baseUrl: '${ location.origin }/monaco/'
-            };
-            importScripts('${ location.origin }/monaco/${ label }.worker.js');
-        `) }`;
+export class inteligentMergeDialog {
+    constructor() {
+        this.dialog = null;
     }
-};
+    open() {
+        if (!this.dialog) {
+            this.createDialog();
+        }
+        this.dialog.style.display = 'block';
+    }
+    close() {
+        if (this.dialog) {
+            this.dialog.style.display = 'none';
+        }
+    }
+    createDialog() {
+        this.dialog = document.createElement('div');
+        this.dialog.style.position = 'fixed';
+        this.dialog.style.top = '30px';
+        this.dialog.style.left = '30px';
+        this.dialog.style.width = 'calc(100% - 60px)';
+        this.dialog.style.height = 'calc(100% - 60px)';
+        this.dialog.style.border = '1px solid #ccc';
+        this.dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        this.dialog.style.display = 'none';
+        this.dialog.style.zIndex = '1001';
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        closeButton.style.marginTop = '10px';
+        closeButton.addEventListener('click', () => this.close());
+        this.dialog.appendChild(closeButton);
+        document.body.appendChild(this.dialog);
+        // add a textarea to the dialog
+        this.textArea = document.createElement('textarea');
+        this.textArea.style.width = 'calc(100% - 20px)';
+        this.textArea.style.height = 'calc(100% - 100px)';
+        this.textArea.style.margin = '10px';
+        this.textArea.style.padding = '10px';
+        this.textArea.style.border = '1px solid #ccc';
+        this.textArea.style.borderRadius = '5px';
+        this.textArea.style.resize = 'none';
+        // add hint text to the textarea
+        this.textArea.placeholder = 'Paste the code you want to merge here';
+        this.dialog.appendChild(this.textArea);
+        // add a submit button to the dialog
+        const submitButton = document.createElement('button');
+        submitButton.textContent = 'AUTO MERGE';
+        submitButton.style.margin = '10px';
+        submitButton.style.padding = '5px 10px';
+        submitButton.style.backgroundColor = '#444';
+        submitButton.style.color = '#fff';
+        submitButton.style.border = 'none';
+        submitButton.style.cursor = 'pointer';
+        submitButton.addEventListener('click', async () => {
+            const codeTweaker = new codeManipulator(await editor.getEditorContents());
+            await codeTweaker.parse();
+            await codeTweaker.mergeCode(this.textArea.value);
+            await codeTweaker.mergeDuplicates();
+            editor.setEditorContents(await codeTweaker.generateCode());
+            //this.textArea.value = await codeTweaker.generateCode();
+            this.close();
+        });
+        this.dialog.appendChild(submitButton);
+    }
+}

@@ -1,3 +1,22 @@
 * {
  box-sizing: border-box;
 }
+
+:root {
+    /* Define light and dark mode background colors */
+    --page-bg-light: #ffffff;
+    --page-bg-dark: #121212;
+  }
+
+  /* Apply background color based on the current mode */
+  div {
+    background-color: var(--page-bg-light);
+    color: black;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    div {
+      background-color: var(--page-bg-dark);
+      color: white;
+    }
+  }
