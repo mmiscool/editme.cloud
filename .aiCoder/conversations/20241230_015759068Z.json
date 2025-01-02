@@ -1,0 +1,49 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/default-system-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-system-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./src/TabbedFileEditor.js",
+      "filePath": "./src/TabbedFileEditor.js",
+      "description": "// Code file to be edited"
+    },
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "filePath": "./.aiCoder/prompts/snippet-production-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "Modify the createFileTreeContainer method in the TabbedFileEditor class.\nmake the file tree show at 250px wide.\n\nRemember to respond with a snippet in the form of the following:\n```\nclass TabbedFileEditor {\n    createFileTreeContainer(mainContainer) {\n        // your code here\n    }\n}\n```\n"
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nclass TabbedFileEditor {\n    createFileTreeContainer(mainContainer) {\n        this.fileTreeContainer = document.createElement('div');\n        this.fileTreeContainer.style.width = '250px';\n        this.fileTreeContainer.style.padding = '10px';\n        this.fileTreeContainer.style.overflowX = 'scroll';\n        this.fileTreeContainer.style.overflowY = 'auto';\n        mainContainer.appendChild(this.fileTreeContainer);\n    }\n}\n```"
+    },
+    {
+      "role": "user",
+      "content": "make it 200px wide"
+    },
+    {
+      "role": "assistant",
+      "content": "```javascript\nclass TabbedFileEditor {\n    createFileTreeContainer(mainContainer) {\n        this.fileTreeContainer = document.createElement('div');\n        this.fileTreeContainer.style.width = '200px';\n        this.fileTreeContainer.style.padding = '10px';\n        this.fileTreeContainer.style.overflowX = 'scroll';\n        this.fileTreeContainer.style.overflowY = 'auto';\n        mainContainer.appendChild(this.fileTreeContainer);\n    }\n}\n```"
+    }
+  ],
+  "title": "Modify createFileTreeContainer.TabbedFileEditor",
+  "id": "20241230_015759068Z",
+  "targetFile": "./src/TabbedFileEditor.js",
+  "chatMode": "chat",
+  "lastModified": "2024-12-30T01:59:22.822Z"
+}

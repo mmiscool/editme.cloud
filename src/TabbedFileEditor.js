@@ -1,6 +1,7 @@
 
 import * as monaco from 'monaco-editor';
 import { codeManipulator } from './intelligentMerge.js';
+import { ChatManager } from './aiFrontEnd/ChatManager.js';
 // Ensure this is set before creating the editor
 window.MonacoEnvironment = {
     getWorkerUrl: function (workerId, label) {
@@ -86,10 +87,15 @@ export class TabbedFileEditor {
         });
         this.addToolbarButton({
             title: 'ℹ️',
-            // About icon
             toolTip: 'About',
             callback: () => this.openAboutPage()
         });
+        this.addToolbarButton({
+            title: '💬',
+            toolTip: 'Open chat dialog',
+            callback: () => this.openChat()
+        });
+        // Added chat button
         this.createFilePathTextBox();
     }
     createMainContainer() {
@@ -681,7 +687,52 @@ export class TabbedFileEditor {
         }
     }
     openAboutPage() {
-        window.open('https://github.com/mmiscool/editme.cloud', '_blank');
+        this.createAboutDialog();
+        this.aboutDialog.style.display = 'block';
+    }
+    createAboutDialog() {
+        this.aboutDialog = document.createElement('div');
+        this.aboutDialog.style.position = 'fixed';
+        this.aboutDialog.classList.add('dialog');
+        this.aboutDialog.style.display = 'none';
+        const title = document.createElement('h2');
+        title.textContent = 'About EditMe.Cloud';
+        title.style.color = 'white';
+        // Add white text color for better contrast
+        const description = document.createElement('p');
+        description.textContent = 'A simple cloud-based code editor.';
+        description.style.color = 'white';
+        // Add white text color for better contrast
+        const githubLink = document.createElement('a');
+        githubLink.href = 'https://github.com/mmiscool/editme.cloud';
+        githubLink.textContent = 'GitHub Repository';
+        githubLink.target = '_blank';
+        githubLink.style.color = 'white';
+        // Add white text color for better contrast
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        closeButton.style.marginTop = '10px';
+        closeButton.style.backgroundColor = '#ccc';
+        // Light gray button
+        closeButton.style.color = '#444';
+        // Dark gray text
+        closeButton.style.border = 'none';
+        closeButton.addEventListener('click', () => this.aboutDialog.style.display = 'none');
+        this.aboutDialog.appendChild(title);
+        this.aboutDialog.appendChild(description);
+        this.aboutDialog.appendChild(githubLink);
+        this.aboutDialog.appendChild(closeButton);
+        document.body.appendChild(this.aboutDialog);
+    }
+    // ... other methods
+    openChat() {
+        this.createChatDialog();
+        this.chatDialog.open();
+    }
+    createChatDialog() {
+        if (!this.chatDialog) {
+            this.chatDialog = new ChatDialog();
+        }
     }
 }
 export class SettingsDialog {
@@ -701,15 +752,8 @@ export class SettingsDialog {
     }
     createDialog() {
         this.dialog = document.createElement('div');
-        this.dialog.style.position = 'fixed';
-        this.dialog.style.top = '30px';
-        this.dialog.style.left = '30px';
-        this.dialog.style.width = 'calc(100% - 60px)';
-        this.dialog.style.height = 'calc(100% - 60px)';
-        this.dialog.style.border = '1px solid #ccc';
-        this.dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-        this.dialog.style.display = 'none';
-        this.dialog.style.zIndex = '1001';
+        this.dialog.classList.add('dialog');
+
         const closeButton = document.createElement('button');
         closeButton.textContent = 'Close';
         closeButton.style.marginTop = '10px';
@@ -735,15 +779,9 @@ export class inteligentMergeDialog {
     }
     createDialog() {
         this.dialog = document.createElement('div');
-        this.dialog.style.position = 'fixed';
-        this.dialog.style.top = '30px';
-        this.dialog.style.left = '30px';
-        this.dialog.style.width = 'calc(100% - 60px)';
-        this.dialog.style.height = 'calc(100% - 60px)';
-        this.dialog.style.border = '1px solid #ccc';
-        this.dialog.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-        this.dialog.style.display = 'none';
-        this.dialog.style.zIndex = '1001';
+        this.dialog.classList.add('dialog');
+
+
         const closeButton = document.createElement('button');
         closeButton.textContent = 'Close';
         closeButton.style.marginTop = '10px';
@@ -781,5 +819,38 @@ export class inteligentMergeDialog {
             this.close();
         });
         this.dialog.appendChild(submitButton);
+    }
+}
+// ... other methods
+export class ChatDialog {
+    constructor() {
+        this.dialog = null;
+    }
+    open() {
+        if (!this.dialog) {
+            this.createDialog();
+        }
+        this.dialog.style.display = 'block';
+    }
+    close() {
+        if (this.dialog) {
+            this.dialog.style.display = 'none';
+        }
+    }
+    createDialog() {
+        this.dialog = document.createElement('div');
+        // add dialog class 
+        this.dialog.classList.add('dialog');
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Close';
+        closeButton.style.marginTop = '10px';
+        closeButton.addEventListener('click', () => this.close());
+        this.dialog.appendChild(closeButton);
+        const chatContent = document.createElement('div');
+        const chatManager = new ChatManager(chatContent, {});
+
+
+        this.dialog.appendChild(chatContent);
+        document.body.appendChild(this.dialog);
     }
 }

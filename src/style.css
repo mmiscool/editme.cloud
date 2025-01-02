@@ -1,22 +1,25 @@
 * {
- box-sizing: border-box;
+  box-sizing: border-box;
+  font-family: monospace;
 }
 
-:root {
-    /* Define light and dark mode background colors */
-    --page-bg-light: #ffffff;
-    --page-bg-dark: #121212;
-  }
+body {
+  color: white;
+  background-color: #333;
+}
 
-  /* Apply background color based on the current mode */
-  div {
-    background-color: var(--page-bg-light);
-    color: black;
-  }
 
-  @media (prefers-color-scheme: dark) {
-    div {
-      background-color: var(--page-bg-dark);
-      color: white;
-    }
-  }
+
+.dialog {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  background-color: #333;
+  padding: 5px;
+  margin: 50px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 5000;
+}

@@ -1,0 +1,21 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "./.aiCoder/prompts/plan-edit-prompt.md",
+      "filePath": "./.aiCoder/prompts/plan-edit-prompt.md",
+      "description": ""
+    },
+    {
+      "role": "user",
+      "content": "./.aiCoder/prompts/default-plan-prompt.md",
+      "filePath": "./.aiCoder/prompts/default-plan-prompt.md",
+      "description": "Plan to be edited:"
+    }
+  ],
+  "title": "Plan Chat",
+  "id": "20241230_080106407Z",
+  "targetFile": null,
+  "chatMode": "plan",
+  "lastModified": "2024-12-30T08:01:06.408Z"
+}

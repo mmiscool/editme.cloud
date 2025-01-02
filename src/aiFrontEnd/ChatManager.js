@@ -1,9 +1,7 @@
 
 import { doAjax } from "./doAjax.js";
 import { MarkdownToHtml } from "./MarkdownToHtml.js";
-import { makeElement } from "./domElementFactory.js";
-import { choseFile, fileDialog } from "./fileDialog.js";
-import { auto } from "groq-sdk/_shims/registry.mjs";
+import { choseFile } from "./fileDialog.js";
 
 
 let ctx = {};
